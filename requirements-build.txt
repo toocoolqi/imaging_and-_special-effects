@@ -1,0 +1,3 @@
+# Optional Windows packaging tool. Not required to play or develop the game.
+-r requirements.txt
+pyinstaller==6.22.0
