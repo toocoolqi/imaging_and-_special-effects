@@ -16,10 +16,10 @@ repository does not change that EXE; rebuild it when you want a new app version.
 
 ## Start developing
 
-The intended private remote is
+The private team repository is
 `https://github.com/toocoolqi/imaging_and-_special-effects.git`.
 Each teammate needs repository access from its owner and Python 3.12 installed.
-Once this starter has been published to that remote:
+Each member starts by cloning the same repository:
 
 ```powershell
 git clone https://github.com/toocoolqi/imaging_and-_special-effects.git

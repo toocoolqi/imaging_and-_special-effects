@@ -1,0 +1,163 @@
+{
+  "source_size": [
+    1536,
+    1024
+  ],
+  "frame_size": [
+    56,
+    92
+  ],
+  "character": "Classic Chef",
+  "frames": {
+    "idle": [
+      {
+        "file": "idle_0.png",
+        "center": [
+          247,
+          181
+        ]
+      },
+      {
+        "file": "idle_1.png",
+        "center": [
+          309,
+          181
+        ]
+      },
+      {
+        "file": "idle_2.png",
+        "center": [
+          247,
+          281
+        ]
+      },
+      {
+        "file": "idle_3.png",
+        "center": [
+          309,
+          281
+        ]
+      }
+    ],
+    "down": [
+      {
+        "file": "down_0.png",
+        "center": [
+          386,
+          181
+        ]
+      },
+      {
+        "file": "down_1.png",
+        "center": [
+          455,
+          181
+        ]
+      },
+      {
+        "file": "down_2.png",
+        "center": [
+          386,
+          281
+        ]
+      },
+      {
+        "file": "down_3.png",
+        "center": [
+          455,
+          281
+        ]
+      }
+    ],
+    "up": [
+      {
+        "file": "up_0.png",
+        "center": [
+          539,
+          181
+        ]
+      },
+      {
+        "file": "up_1.png",
+        "center": [
+          601,
+          181
+        ]
+      },
+      {
+        "file": "up_2.png",
+        "center": [
+          539,
+          281
+        ]
+      },
+      {
+        "file": "up_3.png",
+        "center": [
+          601,
+          281
+        ]
+      }
+    ],
+    "left": [
+      {
+        "file": "left_0.png",
+        "center": [
+          678,
+          181
+        ]
+      },
+      {
+        "file": "left_1.png",
+        "center": [
+          744,
+          181
+        ]
+      },
+      {
+        "file": "left_2.png",
+        "center": [
+          678,
+          281
+        ]
+      },
+      {
+        "file": "left_3.png",
+        "center": [
+          744,
+          281
+        ]
+      }
+    ],
+    "right": [
+      {
+        "file": "right_0.png",
+        "center": [
+          820,
+          181
+        ]
+      },
+      {
+        "file": "right_1.png",
+        "center": [
+          886,
+          181
+        ]
+      },
+      {
+        "file": "right_2.png",
+        "center": [
+          820,
+          281
+        ]
+      },
+      {
+        "file": "right_3.png",
+        "center": [
+          886,
+          281
+        ]
+      }
+    ]
+  }
+}
