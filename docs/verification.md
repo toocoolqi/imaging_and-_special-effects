@@ -1,6 +1,8 @@
 # Delivery verification
 
 Verified on 5 October 2026 with Windows 11, Python 3.12.14 and Arcade 3.3.3.
+The completed GitHub checkout was verified again on 6 October 2026 in a fresh
+environment: all 34 tests passed, including the graphical tests.
 
 - Shared starter: **34 tests passed**, including real Arcade rendering.
 - Compiled Windows app: **16 executable-level checks passed**.

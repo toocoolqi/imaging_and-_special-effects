@@ -6,7 +6,9 @@ folders and shared data definitions, ready for the other members to implement.
 
 ## Play without the repository
 
-Use the separate **player-demo-windows.zip** delivery: extract the whole ZIP and
+Download **player-demo-windows.zip** from the
+[standalone demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/player-demo-v0.1.0).
+Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
 The portable demo is Windows 64-bit; the source below can be developed separately.
