@@ -1,10 +1,20 @@
-# Expanded tiled kitchen
+# Low top-down kitchen
 
-The kitchen uses the warm tiled background from the supplied image. Its room
-is now **1280 x 960 world pixels**, increased from 900 x 720. The original back
-wall/counter row is preserved; floor tiles from that image extend the room.
-The complete view has a 300-pixel order sidebar. The window scales the whole
-view to fit the display, without changing movement speed or collision sizes.
+The whole kitchen uses the same warm tiles and separate low top-down furniture.
+There is no perspective back-wall image strip. The room is **1024 x 768 world
+pixels**, with straight walls on all four sides and a 256-pixel sidebar. Removing
+the blocked photograph area leaves more usable floor than the original demo.
+
+The chef is drawn at native 56 x 92 size (scale 1.0), compared with a table's
+190 x 116 size. It has a fixed 48 x 86 collision rectangle in every animation.
+The larger chef is included in the route checks; all stations remain reachable.
+
+The startup window prefers **1040 x 624 logical units**. On Windows it reads
+the monitor's work area and the actual window DPI before sizing, so 125%, 150%
+or 200% display scaling cannot turn the requested window into an oversized one.
+It leaves room for the title bar/taskbar and centers within the work area.
+Drag its edges or maximize it: the full scene keeps its proportions, using
+letterboxing where needed. Text is drawn at its displayed size to stay legible.
 
 ![Kitchen preview](images/kitchen_preview.png)
 
@@ -26,17 +36,16 @@ center `(x, y)`, visible width/height, and whether it stands on the floor.
 The renderer and solid furniture rectangles use the same record. Keep prepared
 images in `assets/kitchen/`; the build includes that whole directory.
 
-`ROOM_SOLIDS` closes the left, right and bottom edges and the complete original
-back wall/counter row. Furniture uses conservative full visual rectangles:
-the chef cannot overlap its legs/front, walk behind the wall artwork, or leave
-the room through the bottom. The sidebar is outside the kitchen.
+`ROOM_SOLIDS` closes all four edges with 24-pixel walls. Furniture uses
+conservative full visual rectangles: the chef cannot overlap its legs/front or
+leave the room. The sidebar is outside the kitchen.
 
 Small decorations set `solid=False` and name their supporting table/stove.
 They inherit that furniture's solid rectangle. A new object on the FLOOR must
 have its own solid rectangle. Do not make it decorative without collision.
 Press F1 to see all solid outlines and station ranges over the artwork.
 
-The chef's fixed collision rectangle is 31.2 x 55.9 world pixels. Leave wider
+The chef's fixed collision rectangle is 48 x 86 world pixels. Leave wider
 aisles than that in both axes. Approach markers belong on clear floor beside
 furniture. Run the tests after moving a table or marker: they check exact target
 reachability from spawn, including the chef's whole body, and press the actual
@@ -44,7 +53,7 @@ controller against every accessible side of every obstacle.
 
 ## Chopping integration point
 
-`InteractionTarget("chopping_board", "chop", 795, 318)` is the reserved floor
+`InteractionTarget("chopping_board", "chop", 740, 290)` is the reserved floor
 approach point below the chopping table. `ingredient_id` is empty. An E press
 reaches `GameView.handle_interaction("interact", target)` with `kind == "chop"`.
 It currently displays feedback only. Connect future cutting state there using

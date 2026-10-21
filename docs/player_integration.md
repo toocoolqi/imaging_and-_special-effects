@@ -79,23 +79,25 @@ as described in the original member guides. Keep those calls together in the
 scene. Ingredient state belongs to Member 2; order state belongs to Member 3.
 The player module does not need to change. No held-item animations are included.
 
-The sidebar is `(left=1280, bottom=0, width=300, height=960)` in world coordinates. Replace the demo's
+The sidebar is `(left=1024, bottom=0, width=256, height=768)` in world coordinates. Replace the demo's
 sidebar drawing with Member 3's renderer when it is ready. Keep player feedback
 somewhere visible. Reset/pause must eventually cover all systems together.
 
 ## Collision and layout rules
 
-- Coordinates start at bottom-left. Kitchen width is 1280 and height is 960.
+- Coordinates start at bottom-left. Kitchen width is 1024 and height is 768.
 - Furniture pictures, solids and approaches share `restaurant/kitchen/layout.py`.
   `WALL_RECTANGLES`/`TARGETS` remain available through shared settings.
   Read [kitchen notes](kitchen_layout.md) before changing this map.
-- The camera scales the whole 1580 x 960 scene to fit the display. Movement and
-  collision calculations always use world pixels, independent of screen size.
+- The camera scales the whole 1280 x 768 scene without stretching. The resizable
+  startup window accounts for Windows DPI and monitor work area; see
+  `restaurant/display.py`. Movement and collisions use world pixels. Text uses
+  a separate screen camera and displayed font size, so resizing keeps it legible.
 - Add solid, static, axis-aligned wall/counter sprites to `self.walls`.
   The same SpriteList can be edited when the layout changes. Replacing the list
   is supported too. Rotated/moving obstacles are outside this demo's contract.
 - Spawn the chef on clear floor. Reset does not search for a free spawn point.
-- The fixed hitbox is approximately 31.2 by 55.9 world pixels. It stays identical
+- The fixed hitbox is 48 by 86 world pixels. It stays identical
   across animations. F1 shows it. The chef center is the interaction origin.
 - Motion uses 200 pixels per second, normalized diagonals, and Arcade's
   PhysicsEngineSimple with steps no longer than 2 pixels to prevent tunneling.
@@ -118,5 +120,5 @@ idle columns. Animation runs at one frame per 0.14 seconds while moving.
 
 The presentation image does not provide a clean native 32x32 grid despite its
 heading. Prepared frames preserve the supplied artwork in a 56x92 transparent
-canvas, displayed at scale 0.65. Replacing art later requires only matching these
+canvas, displayed at scale 1.0. Replacing art later requires only matching these
 frame names/canvas alignment or adjusting the loader and stable collision size.

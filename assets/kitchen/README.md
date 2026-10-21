@@ -5,9 +5,10 @@ These prepared PNGs are crops of the user's two supplied presentation sheets:
 - Warm tiled kitchen, stove, bin, serving table and chopping board: 1408 x 768.
 - Ingredient icons/crates, plate and pot: 1280 x 853.
 
-No image generation was used. `back_wall.png` keeps the upper room without the
-sheet's captions or cut-off foreground furniture. `floor_tile.png` repeats in
-Arcade to expand its floor. Separate props have transparent backgrounds; only
+No image generation was used. `floor_tile.png` repeats at one consistent size
+over the whole room; separate furniture supplies the same low top-down style
+everywhere. `back_wall.png` is a legacy reference crop and is NOT loaded or
+drawn by the game. Separate props have transparent backgrounds; only
 background connected to crop edges and disconnected crop debris were removed.
 The preview image is for inspecting assets and is not drawn in the game.
 

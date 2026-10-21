@@ -6,7 +6,8 @@ from pathlib import Path
 import arcade
 
 from restaurant.game_view import create_window
-from restaurant.kitchen.layout import ANIMATION_TEST_POSITION
+from restaurant.display import window_geometry
+from restaurant.kitchen.layout import ANIMATION_TEST_POSITION, PROPS
 from restaurant.shared.settings import KITCHEN_HEIGHT, KITCHEN_WIDTH, TARGETS
 
 
@@ -24,6 +25,22 @@ def run_packaged_check(output: Path) -> int:
         arcade.unschedule(exercise)
         try:
             view = window.current_view
+            geometry = window_geometry(window)
+            report["window"] = geometry
+            work_left, work_top, work_width, work_height = geometry["work_area_pixels"]
+            pixel_width, pixel_height = geometry["framebuffer_pixels"]
+            fits = pixel_width <= work_width - 60 and pixel_height <= work_height - 96
+            if "outer_rectangle_pixels" in geometry:
+                left, top, right, bottom = geometry["outer_rectangle_pixels"]
+                fits = fits and (left >= work_left and top >= work_top
+                                 and right <= work_left + work_width
+                                 and bottom <= work_top + work_height)
+            check(fits, "Complete window fits desktop work area including DPI and frame")
+            table = next(prop for prop in PROPS if prop.prop_id == "chopping_table")
+            check(view.player.sprite.height >= table.height * 0.75,
+                  "Chef is proportionate to the furniture")
+            check("back_wall" not in view.kitchen.textures,
+                  "One consistent low top-down room; no perspective image strip")
             for key, direction, axis, sign in (
                 (arcade.key.W, "up", 1, 1), (arcade.key.S, "down", 1, -1),
                 (arcade.key.A, "left", 0, -1), (arcade.key.D, "right", 0, 1),
@@ -50,7 +67,9 @@ def run_packaged_check(output: Path) -> int:
             view.on_key_press(arcade.key.W, 0)
             for _ in range(20):
                 view.on_update(0.25)
-            check(view.player.position[1] < 140, "Plate counter blocks movement")
+            plate_counter = next(prop for prop in PROPS if prop.prop_id == "plate_counter")
+            check(view.player.position[1] < plate_counter.y - plate_counter.height / 2,
+                  "Plate counter blocks movement")
             check(not arcade.check_for_collision_with_list(view.player.sprite, view.walls),
                   "Chef remains outside solid counters")
             view.clear_input()
@@ -64,12 +83,15 @@ def run_packaged_check(output: Path) -> int:
                 tested = 0
                 half_x = view.player.sprite.width * 24 / 56
                 half_y = view.player.sprite.height * 43 / 92
-                for direction, point in (
-                    ("right", (wall.left - half_x - 8, wall.center_y)),
-                    ("left", (wall.right + half_x + 8, wall.center_y)),
-                    ("up", (wall.center_x, wall.bottom - half_y - 8)),
-                    ("down", (wall.center_x, wall.top + half_y + 8)),
-                ):
+                approaches = []
+                for fraction in (-0.25, 0, 0.25):
+                    approaches.extend((
+                        ("right", (wall.left - half_x - 2, wall.center_y + fraction * wall.height)),
+                        ("left", (wall.right + half_x + 2, wall.center_y + fraction * wall.height)),
+                        ("up", (wall.center_x + fraction * wall.width, wall.bottom - half_y - 2)),
+                        ("down", (wall.center_x + fraction * wall.width, wall.top + half_y + 2)),
+                    ))
+                for direction, point in approaches:
                     if not (half_x <= point[0] <= KITCHEN_WIDTH - half_x
                             and half_y <= point[1] <= KITCHEN_HEIGHT - half_y):
                         continue
@@ -112,6 +134,14 @@ def run_packaged_check(output: Path) -> int:
             view.debug = True
             view.on_draw()
             arcade.get_image().save(output / "collision-guide.png")
+            view.debug = False
+            window.set_size(800, 600)
+            view.on_draw()
+            viewport = view.camera.viewport
+            check(viewport.width <= window.width and viewport.height <= window.height
+                  and abs(viewport.width / viewport.height - 5 / 3) < 0.01,
+                  "Resizing keeps the whole room and sidebar visible without stretching")
+            arcade.get_image().save(output / "resized-demo.png")
             report["passed"] = True
         except Exception:
             report["error"] = traceback.format_exc()

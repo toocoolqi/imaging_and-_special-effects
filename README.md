@@ -4,15 +4,17 @@ One shared Python Arcade project for all three members. The Classic Chef player
 system is working now. Ingredients/plates and customer/orders have reserved
 folders and shared data definitions, ready for the other members to implement.
 
-The expanded tiled kitchen now includes the supplied background and prop images,
-solid furniture, wider aisles and a separate chopping-board table. It is
-1280 x 960 world pixels, with an automatically scaled window for smaller screens.
-Food and cutting stay preview-only. See [kitchen layout notes](docs/kitchen_layout.md).
+The tiled kitchen uses one consistent low top-down view across the entire room,
+with the supplied prop images, solid furniture and a separate chopping-board
+table. The chef is enlarged to suit the furniture. Its 1024 x 768 world and
+256-pixel sidebar fit inside a comfortable, resizable window that accounts for
+Windows display scaling and the taskbar. Food/cutting stay preview-only.
+See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.2.0.zip** from the
-[updated kitchen demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.2.0).
+Download **kitchen-demo-windows-v0.3.0.zip** from the
+[corrected kitchen demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.3.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -54,6 +56,7 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | R | Reset |
 | F1 | Show collision and interaction guides |
 | Esc | Exit |
+| Drag window edges / maximize | Resize while keeping the whole room visible |
 
 No hold-item animations are included. The current stations report interactions;
 they do not collect food, assemble plates, serve orders or award points yet.

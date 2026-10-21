@@ -50,7 +50,7 @@ def test_artwork_and_supports_match_solid_furniture():
     props = {prop.prop_id: prop for prop in PROPS}
     assert len(props) == len(PROPS)
     assert WALL_RECTANGLES == ROOM_SOLIDS + tuple(prop.rectangle for prop in SOLID_PROPS)
-    for name in {"back_wall", "floor_tile"} | {prop.asset for prop in PROPS}:
+    for name in {"floor_tile"} | {prop.asset for prop in PROPS}:
         path = ASSETS / f"{name}.png"
         assert path.is_file(), name
         image = arcade.load_texture(path).image
@@ -110,18 +110,22 @@ def test_each_obstacle_blocks_its_accessible_sides(rectangle):
         ("up", 1, -1, height / 2, HALF_HEIGHT),
         ("down", 1, 1, height / 2, HALF_HEIGHT),
     ):
-        start = [cx, cy]
-        start[axis] += side * (half_extent + chef_half + 1.5)
-        if not clear_center(start):
-            continue  # Outside room or a neighboring object blocks this side.
-        chef.reset(tuple(start))
-        chef.set_move_key(direction, True)
-        for _ in range(6):
-            chef.update(1.0, walls)  # Includes stalled-frame/tunneling protection.
-            assert not arcade.check_for_collision_with_list(chef.sprite, walls)
-            assert side * (chef.position[axis] - (cx, cy)[axis]) >= half_extent + chef_half - 0.1
-        assert chef.state == "idle"
-        checked += 1
+        # A long wall's midpoint can be obstructed by furniture. Sample its
+        # other accessible face sections too, instead of declaring it untested.
+        for fraction in (-0.25, 0, 0.25):
+            start = [cx, cy]
+            start[axis] += side * (half_extent + chef_half + 1.5)
+            start[1 - axis] += fraction * (height if axis == 0 else width)
+            if not clear_center(start):
+                continue
+            chef.reset(tuple(start))
+            chef.set_move_key(direction, True)
+            for _ in range(6):
+                chef.update(1.0, walls)
+                assert not arcade.check_for_collision_with_list(chef.sprite, walls)
+                assert side * (chef.position[axis] - (cx, cy)[axis]) >= half_extent + chef_half - 0.1
+            assert chef.state == "idle"
+            checked += 1
     assert checked, f"No clear approach tested for obstacle {rectangle}"
 
 

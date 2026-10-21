@@ -4,6 +4,7 @@ from textwrap import fill
 
 import arcade
 
+from restaurant.display import fit_window, scene_viewport
 from restaurant.kitchen.layout import TARGET_LABELS
 from restaurant.kitchen.scene import KitchenScene
 from restaurant.player.controller import PlayerController
@@ -27,10 +28,11 @@ ACCENT = (111, 221, 178)
 class GameView(arcade.View):
     def __init__(self):
         super().__init__()
-        # Keep a larger world on smaller laptop screens without changing physics.
+        # The full room and sidebar stay visible in a resizable, DPI-aware window.
         self.camera = arcade.Camera2D(
-            viewport=arcade.LBWH(0, 0, self.window.width, self.window.height),
+            viewport=scene_viewport(self.window.width, self.window.height),
             position=(0, 0), projection=arcade.LRBT(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT))
+        self.ui_camera = arcade.Camera2D(position=(0, 0))
         self.player = PlayerController(SPAWN)
         self.players = arcade.SpriteList()
         self.players.append(self.player.sprite)
@@ -47,6 +49,7 @@ class GameView(arcade.View):
         self.message = "Explore the kitchen. The board has its own prep table."
         self.interaction_count = 0
         self._text_cache = {}
+        self._text_view_size = None
 
     def clear_input(self):
         self.pressed.clear()
@@ -119,16 +122,31 @@ class GameView(arcade.View):
             self.message = f"{action.upper()} -> {target.target_id} (display only)"
 
     def text(self, key, value, x, y, size=14, color=INK, **kwargs):
-        # Reuse text objects instead of recreating them on every frame.
+        # Rasterize type at its displayed size, instead of shrinking cached
+        # world-sized glyphs. This keeps letters intact in letterboxed windows.
+        viewport = self.camera.viewport
+        scale = viewport.width / WINDOW_WIDTH
+        x, y = viewport.left + x * scale, viewport.bottom + y * scale
+        if "width" in kwargs:
+            kwargs["width"] = max(1, int(kwargs["width"] * scale))
         if key not in self._text_cache:
-            self._text_cache[key] = arcade.Text(value, x, y, color, size, **kwargs)
+            self._text_cache[key] = arcade.Text(value, x, y, color, size * scale, **kwargs)
         label = self._text_cache[key]
-        label.text = value
-        label.draw()
+        if label.text != value:
+            label.text = value
+        with self.ui_camera.activate():
+            label.draw()
 
     def on_draw(self):
-        self.camera.use()
         self.clear((30, 43, 49))
+        self.camera.viewport = scene_viewport(self.window.width, self.window.height)
+        self.camera.use()
+        view_size = self.window.width, self.window.height, self.window.scale
+        if view_size != self._text_view_size:
+            self._text_cache.clear()
+            self._text_view_size = view_size
+        self.ui_camera.viewport = arcade.LBWH(0, 0, self.window.width, self.window.height)
+        self.ui_camera.projection = arcade.LRBT(0, self.window.width, 0, self.window.height)
         self.kitchen.draw_floor()
         self.kitchen.draw_props()
         for target in self.targets:
@@ -138,10 +156,10 @@ class GameView(arcade.View):
             arcade.draw_circle_outline(target.x, target.y, 14 if selected else 10,
                                        (84, 76, 55), 2)
             if selected:
-                self.text("prompt_" + target.target_id, "E", target.x, target.y - 32,
+                self.text("prompt_" + target.target_id, "E", target.x, target.y - 66,
                           14, (34, 72, 60), anchor_x="center")
-        arcade.draw_ellipse_filled(self.player.sprite.center_x, self.player.sprite.center_y - 26,
-                                  31, 9, (128, 140, 127, 150))
+        arcade.draw_ellipse_filled(self.player.sprite.center_x, self.player.sprite.center_y - 41,
+                                  45, 12, (96, 95, 73, 140))
         self.players.draw(pixelated=True)
         if self.debug:
             for x, y, width, height in WALL_RECTANGLES:
@@ -151,21 +169,21 @@ class GameView(arcade.View):
             for target in self.targets:
                 arcade.draw_circle_outline(target.x, target.y, 64, (80, 140, 130), 1)
         arcade.draw_lbwh_rectangle_filled(*SIDEBAR_BOUNDS, (24, 37, 44))
-        x = KITCHEN_WIDTH + 24
+        x = KITCHEN_WIDTH + 18
         top = WINDOW_HEIGHT
-        self.text("eyebrow", "EXPANDED KITCHEN / DEMO", x, top - 49, 11, ACCENT)
-        self.text("title", "Classic Chef", x, top - 92, 25)
-        self.text("subtitle", "The tiled kitchen", x, top - 121, 15, MUTED)
-        self.text("controls", "WASD / arrows    Move\nE    Station preview\nQ    Plate preview\nP    Pause / resume\nR    Reset\nF1   Show solid boundaries\nEsc  Close",
-                  x, top - 174, 13, INK, multiline=True, width=255, anchor_y="top")
+        self.text("eyebrow", "KITCHEN / PLAYER DEMO", x, top - 35, 11, ACCENT)
+        self.text("title", "Classic Chef", x, top - 76, 24)
+        self.text("subtitle", "Kitchen floor", x, top - 105, 15, MUTED)
+        self.text("controls", "WASD / arrows    Move\nE    Station preview\nQ    Plate preview\nP    Pause / resume\nR    Reset\nF1   Solid boundaries\nEsc  Close",
+                  x, top - 150, 14, INK, multiline=True, width=225, anchor_y="top")
         self.text("status", f"State: {self.player.state}\nFacing: {self.player.direction}\nStation previews: {self.interaction_count}",
-                  x, top - 371, 14, ACCENT, multiline=True, width=252, anchor_y="top")
+                  x, top - 345, 14, ACCENT, multiline=True, width=225, anchor_y="top")
         nearby = TARGET_LABELS[self.selected.target_id] if self.selected else "Explore the room"
-        self.text("nearby", nearby, x, top - 484, 18, INK)
-        self.text("message", fill(self.message, width=27), x, top - 526, 14, INK,
-                  multiline=True, width=250, anchor_y="top")
-        self.text("future", "Kitchen props are display only.\nThe chopping table is ready\nfor the future cutting system.\n\nOrders will appear here later.",
-                  x, 198, 12, MUTED, multiline=True, width=250, anchor_y="top")
+        self.text("nearby", nearby, x, top - 447, 18, INK)
+        self.text("message", fill(self.message, width=24), x, top - 482, 14, INK,
+                  multiline=True, width=220, anchor_y="top")
+        self.text("future", "Props are display only.\nCutting connects here later.\n\nDrag the window edges to resize.",
+                  x, 142, 12, MUTED, multiline=True, width=220, anchor_y="top")
         if self.paused:
             arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,
                                               (20, 30, 40, 170))
@@ -180,16 +198,14 @@ class DemoWindow(arcade.Window):
             self.current_view.clear_input()
 
 
-def fitted_window_size(display_width, display_height):
-    """Leave space for the taskbar/title bar; scale the entire scene uniformly."""
-    scale = min(1.0, (display_width - 80) / WINDOW_WIDTH,
-                (display_height - 120) / WINDOW_HEIGHT)
-    return max(1, round(WINDOW_WIDTH * scale)), max(1, round(WINDOW_HEIGHT * scale))
-
-
 def create_window(*, visible=True):
-    size = fitted_window_size(*arcade.get_display_size())
-    window = DemoWindow(*size, "Classic Chef / Tiled Kitchen",
-                        visible=visible, antialiasing=False, update_rate=1 / 60)
+    # Create small and hidden so Windows reports the actual monitor DPI before
+    # calculating size. Show only after fitting: no oversized startup window.
+    window = DemoWindow(640, 384, "Classic Chef / Kitchen",
+                        visible=False, resizable=True,
+                        antialiasing=False, update_rate=1 / 60)
+    fit_window(window)
     window.show_view(GameView())
+    if visible:
+        window.set_visible(True)
     return window

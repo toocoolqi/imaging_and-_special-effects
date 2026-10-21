@@ -1,5 +1,27 @@
 # Delivery verification
 
+## Corrected room and display sizing — v0.3.0, 21 October 2026
+
+Windows 11, Python 3.12.14, Arcade 3.3.3. **66 source tests** and **34 packaged
+application checks** passed. The packaged ZIP was extracted into a folder with
+spaces and run without Python/source search paths. Both the default and resized
+renderings were visually inspected.
+
+- No perspective back-wall strip; one low top-down room from edge to edge.
+- Chef sprite 56 x 92, stable hitbox 48 x 86; all obstacle faces and exact station
+  routes tested again for the enlarged chef.
+- Sizing regression tests cover 100%, 125%, 150% and 200% Windows scaling with
+  1920, 1366 and 1280-pixel desktop widths.
+- On this desktop at 125% scaling, the default client was 1040 x 624 logical
+  units / 1300 x 780 physical pixels. Its complete native outer window rectangle
+  (including title bar) was inside the monitor work area.
+- Actual window resize tests preserve the whole 1280 x 768 view and its aspect
+  ratio; text rasterizes at its displayed font size rather than shrinking glyphs.
+
+![Corrected packaged kitchen](images/kitchen_preview.png)
+
+The earlier v0.2.0 release remains available for history; use v0.3.0 for this fix.
+
 ## Expanded kitchen — 21 October 2026
 
 Windows 11, Python 3.12.14, Arcade 3.3.3. The final source passed **50 tests**.

@@ -87,8 +87,8 @@ def test_timing_diagonal_and_facing():
 @pytest.mark.parametrize("direction,spawn,rect", [
     ("right", (100, 150), (130, 150, 2, 180)),
     ("left", (160, 150), (130, 150, 2, 180)),
-    ("up", (150, 100), (150, 140, 180, 2)),
-    ("down", (150, 180), (150, 140, 180, 2)),
+    ("up", (150, 80), (150, 140, 180, 2)),
+    ("down", (150, 200), (150, 140, 180, 2)),
 ])
 def test_cannot_cross_thin_walls_even_after_stall(direction, spawn, rect):
     chef = PlayerController(spawn)
