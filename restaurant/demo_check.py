@@ -8,7 +8,10 @@ import arcade
 from restaurant.game_view import create_window
 from restaurant.display import window_geometry
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION, PROPS
-from restaurant.shared.settings import KITCHEN_HEIGHT, KITCHEN_WIDTH, TARGETS
+from restaurant.player.controller import FOOT_HALF_HEIGHT, FOOT_HALF_WIDTH, FOOT_OFFSET_Y
+from restaurant.shared.settings import (
+    KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, TARGETS, WINDOW_HEIGHT, WINDOW_WIDTH,
+)
 
 
 def run_packaged_check(output: Path) -> int:
@@ -68,7 +71,8 @@ def run_packaged_check(output: Path) -> int:
             for _ in range(20):
                 view.on_update(0.25)
             plate_counter = next(prop for prop in PROPS if prop.prop_id == "plate_counter")
-            check(view.player.position[1] < plate_counter.y - plate_counter.height / 2,
+            _, base_y, _, base_h = plate_counter.collision_rectangle
+            check(view.player.ground_position[1] < base_y - base_h / 2,
                   "Plate counter blocks movement")
             check(not arcade.check_for_collision_with_list(view.player.sprite, view.walls),
                   "Chef remains outside solid counters")
@@ -81,8 +85,8 @@ def run_packaged_check(output: Path) -> int:
             # Exercise each actual kitchen obstacle, not just a synthetic wall.
             for index, wall in enumerate(view.walls):
                 tested = 0
-                half_x = view.player.sprite.width * 24 / 56
-                half_y = view.player.sprite.height * 43 / 92
+                half_x = FOOT_HALF_WIDTH * PLAYER_SCALE
+                half_y = FOOT_HALF_HEIGHT * PLAYER_SCALE
                 approaches = []
                 for fraction in (-0.25, 0, 0.25):
                     approaches.extend((
@@ -95,7 +99,7 @@ def run_packaged_check(output: Path) -> int:
                     if not (half_x <= point[0] <= KITCHEN_WIDTH - half_x
                             and half_y <= point[1] <= KITCHEN_HEIGHT - half_y):
                         continue
-                    view.player.reset(point)
+                    view.player.reset((point[0], point[1] - FOOT_OFFSET_Y * PLAYER_SCALE))
                     if arcade.check_for_collision_with_list(view.player.sprite, view.walls):
                         continue
                     view.player.set_move_key(direction, True)
@@ -104,13 +108,13 @@ def run_packaged_check(output: Path) -> int:
                         if arcade.check_for_collision_with_list(view.player.sprite, view.walls):
                             raise AssertionError(f"Obstacle {index} overlaps the chef")
                     if direction == "right":
-                        assert view.player.sprite.center_x < wall.left
+                        assert view.player.ground_position[0] < wall.left
                     elif direction == "left":
-                        assert view.player.sprite.center_x > wall.right
+                        assert view.player.ground_position[0] > wall.right
                     elif direction == "up":
-                        assert view.player.sprite.center_y < wall.bottom
+                        assert view.player.ground_position[1] < wall.bottom
                     else:
-                        assert view.player.sprite.center_y > wall.top
+                        assert view.player.ground_position[1] > wall.top
                     tested += 1
                 check(tested > 0, f"Kitchen obstacle {index + 1}: solid from clear approaches")
             chop = next(target for target in TARGETS if target.kind == "chop")
@@ -121,6 +125,15 @@ def run_packaged_check(output: Path) -> int:
             check(view.interaction_count == 1 and "Cutting" in view.message,
                   "Chopping board preview hook; food stays decorative")
             preview_message = view.message
+            serve = next(target for target in TARGETS if target.kind == "serve")
+            view.reset()
+            view.player.reset((serve.x, serve.y))
+            view.on_key_press(arcade.key.E, 0)
+            view.on_update(0.01)
+            check(view.selected == serve and "dining room" in view.message,
+                  "Serving hook reaches the visible dining-room hatch")
+            view.clear_input()
+            view.player.reset((chop.x, chop.y))
             view.on_key_press(arcade.key.P, 0)
             before = view.player.position
             view.on_update(1)
@@ -129,6 +142,7 @@ def run_packaged_check(output: Path) -> int:
             view.on_key_press(arcade.key.P, 0)
             view.clear_input()
             view.message = preview_message
+            view.on_update(0.01)
             view.on_draw()
             arcade.get_image().save(output / "demo.png")
             view.debug = True
@@ -139,7 +153,7 @@ def run_packaged_check(output: Path) -> int:
             view.on_draw()
             viewport = view.camera.viewport
             check(viewport.width <= window.width and viewport.height <= window.height
-                  and abs(viewport.width / viewport.height - 5 / 3) < 0.01,
+                  and abs(viewport.width / viewport.height - WINDOW_WIDTH / WINDOW_HEIGHT) < 0.01,
                   "Resizing keeps the whole room and sidebar visible without stretching")
             arcade.get_image().save(output / "resized-demo.png")
             report["passed"] = True

@@ -46,7 +46,7 @@ class GameView(arcade.View):
         self.paused = False
         self.debug = False
         self.selected = None
-        self.message = "Explore the kitchen. The board has its own prep table."
+        self.message = "Prep at the island, plate up, then use the service hatch."
         self.interaction_count = 0
         self._text_cache = {}
         self._text_view_size = None
@@ -117,6 +117,9 @@ class GameView(arcade.View):
         elif target.kind == "chop":
             self.interaction_count += 1
             self.message = "Chopping board ready. Cutting will be connected here later."
+        elif target.kind == "serve" and action == "interact":
+            self.interaction_count += 1
+            self.message = "Service hatch to the dining room. Orders will connect here later."
         else:
             self.interaction_count += 1
             self.message = f"{action.upper()} -> {target.target_id} (display only)"
@@ -148,19 +151,20 @@ class GameView(arcade.View):
         self.ui_camera.viewport = arcade.LBWH(0, 0, self.window.width, self.window.height)
         self.ui_camera.projection = arcade.LRBT(0, self.window.width, 0, self.window.height)
         self.kitchen.draw_floor()
-        self.kitchen.draw_props()
+        foot_x, foot_y = self.player.ground_position
+        arcade.draw_ellipse_filled(foot_x, foot_y - 7, 34, 10, (65, 61, 48, 85))
         for target in self.targets:
             selected = self.selected == target
-            arcade.draw_circle_filled(target.x, target.y, 7,
-                                      ACCENT if selected else (248, 223, 167, 145))
-            arcade.draw_circle_outline(target.x, target.y, 14 if selected else 10,
-                                       (84, 76, 55), 2)
+            if selected or self.debug:
+                arcade.draw_ellipse_outline(target.x, target.y - 32, 30, 12,
+                                            ACCENT if selected else (92, 119, 91), 2)
             if selected:
-                self.text("prompt_" + target.target_id, "E", target.x, target.y - 66,
+                self.text("prompt_" + target.target_id, "E", target.x, target.y - 62,
                           14, (34, 72, 60), anchor_x="center")
-        arcade.draw_ellipse_filled(self.player.sprite.center_x, self.player.sprite.center_y - 41,
-                                  45, 12, (96, 95, 73, 140))
-        self.players.draw(pixelated=True)
+        self.kitchen.draw_props(self.player, self.players)
+        self.text("pass_label", "SERVICE  /  DINING ROOM", 744, 672, 9,
+                  (244, 224, 172), anchor_x="center")
+        self.text("pantry_label", "PANTRY", 235, 43, 9, (73, 49, 38), anchor_x="center")
         if self.debug:
             for x, y, width, height in WALL_RECTANGLES:
                 arcade.draw_rect_outline(arcade.XYWH(x, y, width, height),
@@ -173,17 +177,17 @@ class GameView(arcade.View):
         top = WINDOW_HEIGHT
         self.text("eyebrow", "KITCHEN / PLAYER DEMO", x, top - 35, 11, ACCENT)
         self.text("title", "Classic Chef", x, top - 76, 24)
-        self.text("subtitle", "Kitchen floor", x, top - 105, 15, MUTED)
+        self.text("subtitle", "The restaurant kitchen", x, top - 105, 15, MUTED)
         self.text("controls", "WASD / arrows    Move\nE    Station preview\nQ    Plate preview\nP    Pause / resume\nR    Reset\nF1   Solid boundaries\nEsc  Close",
                   x, top - 150, 14, INK, multiline=True, width=225, anchor_y="top")
         self.text("status", f"State: {self.player.state}\nFacing: {self.player.direction}\nStation previews: {self.interaction_count}",
-                  x, top - 345, 14, ACCENT, multiline=True, width=225, anchor_y="top")
+                  x, top - 320, 13, ACCENT, multiline=True, width=225, anchor_y="top")
         nearby = TARGET_LABELS[self.selected.target_id] if self.selected else "Explore the room"
-        self.text("nearby", nearby, x, top - 447, 18, INK)
-        self.text("message", fill(self.message, width=24), x, top - 482, 14, INK,
+        self.text("nearby", nearby, x, top - 412, 18, INK)
+        self.text("message", fill(self.message, width=26), x, top - 446, 13, INK,
                   multiline=True, width=220, anchor_y="top")
         self.text("future", "Props are display only.\nCutting connects here later.\n\nDrag the window edges to resize.",
-                  x, 142, 12, MUTED, multiline=True, width=220, anchor_y="top")
+                  x, 110, 11, MUTED, multiline=True, width=220, anchor_y="top")
         if self.paused:
             arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,
                                               (20, 30, 40, 170))

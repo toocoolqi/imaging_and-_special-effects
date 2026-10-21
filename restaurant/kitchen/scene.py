@@ -1,53 +1,66 @@
-"""Draw prepared pictures from the supplied sheets with Arcade only."""
+"""Arcade-only room renderer with floor-based overlap ordering."""
 from pathlib import Path
 
 import arcade
 
-from restaurant.kitchen.layout import (
-    BOTTOM_WALL_HEIGHT, FLOOR_TOP, KITCHEN_HEIGHT, KITCHEN_WIDTH,
-    PROPS, SIDE_WALL_WIDTH,
-)
+from restaurant.kitchen.details import room_details
+from restaurant.kitchen.layout import PROPS, SOLID_PROPS, WALL_ART
 
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "kitchen"
+
+# Top-left image pixels. Arcade extracts these six transparent sprite regions
+# at load time; the original atlas is preserved and no extra image tool is used.
+ATLAS_REGIONS = {
+    "sink": (124, 58, 578, 271),
+    "pass_counter": (803, 108, 634, 222),
+    "spice_shelf": (178, 395, 501, 250),
+    "extractor": (841, 371, 550, 277),
+    "clean_board": (199, 738, 440, 197),
+    "service_hatch": (816, 686, 612, 267),
+}
+
+
+def load_textures():
+    names = {prop.asset for prop in PROPS} | {item[0] for item in WALL_ART}
+    textures = {name: arcade.load_texture(ASSET_DIR / f"{name}.png")
+                for name in names - ATLAS_REGIONS.keys()}
+    atlas = arcade.load_texture(ASSET_DIR / "restaurant_details.png")
+    textures.update({name: atlas.crop(*region) for name, region in ATLAS_REGIONS.items()})
+    return textures
 
 
 class KitchenScene:
     def __init__(self):
-        names = {"floor_tile"} | {prop.asset for prop in PROPS}
-        self.textures = {name: arcade.load_texture(ASSET_DIR / f"{name}.png")
-                         for name in names}
-        self.floor = arcade.SpriteList()
-        tile_width, tile_height = 128, 64
-        for left in range(0, KITCHEN_WIDTH, tile_width):
-            for bottom in range(0, KITCHEN_HEIGHT, tile_height):
-                sprite = arcade.Sprite(self.textures["floor_tile"])
-                sprite.width, sprite.height = tile_width, tile_height
-                sprite.position = left + tile_width / 2, bottom + tile_height / 2
-                self.floor.append(sprite)
+        self.textures = load_textures()
+        self.floor = room_details()
+        self.props = {prop.prop_id: prop for prop in PROPS}
+        self.decorations = {prop.prop_id: tuple(child for child in PROPS
+                            if child.support == prop.prop_id) for prop in SOLID_PROPS}
 
     def draw_floor(self):
-        self.floor.draw(pixelated=True)
-        # One viewpoint and tile scale across the whole room. No perspective
-        # back-wall photograph is layered over the top of this floor.
-        for left, bottom, width, height in (
-            (0, 0, SIDE_WALL_WIDTH, KITCHEN_HEIGHT),
-            (KITCHEN_WIDTH - SIDE_WALL_WIDTH, 0, SIDE_WALL_WIDTH, KITCHEN_HEIGHT),
-            (0, 0, KITCHEN_WIDTH, BOTTOM_WALL_HEIGHT),
-            (0, FLOOR_TOP, KITCHEN_WIDTH, KITCHEN_HEIGHT - FLOOR_TOP),
-        ):
-            arcade.draw_lbwh_rectangle_filled(left, bottom, width, height, (92, 57, 47))
-        for x in (SIDE_WALL_WIDTH - 7, KITCHEN_WIDTH - SIDE_WALL_WIDTH + 1):
-            arcade.draw_lbwh_rectangle_filled(x, BOTTOM_WALL_HEIGHT, 6,
-                                              FLOOR_TOP - BOTTOM_WALL_HEIGHT,
-                                              (181, 121, 77))
-        for y in (BOTTOM_WALL_HEIGHT - 6, FLOOR_TOP):
-            arcade.draw_lbwh_rectangle_filled(SIDE_WALL_WIDTH - 1, y,
-                                              KITCHEN_WIDTH - 2 * SIDE_WALL_WIDTH + 2,
-                                              6, (181, 121, 77))
+        self.floor.draw()
+        for asset, x, y, width, height in WALL_ART:
+            arcade.draw_texture_rect(self.textures[asset], arcade.XYWH(x, y, width, height),
+                                     pixelated=False)
 
-    def draw_props(self):
-        # Tables first, their decorations second. Solid full bounds mean the
-        # chef never needs to be hidden behind a table's front/legs.
-        for prop in PROPS:
-            arcade.draw_texture_rect(self.textures[prop.asset],
-                                     arcade.XYWH(*prop.rectangle), pixelated=True)
+    def draw_order(self, foot_y):
+        """Back to front, with tabletop decorations attached to their table."""
+        entries = [(prop.depth_y, prop.prop_id) for prop in SOLID_PROPS]
+        entries.append((foot_y, "player"))
+        return [prop_id for _, prop_id in sorted(entries, reverse=True)]
+
+    def draw_prop(self, prop):
+        # Source crops are larger than their displayed size. Linear minification
+        # avoids jagged JPEG edge samples when reducing the supplied pictures.
+        arcade.draw_texture_rect(self.textures[prop.asset],
+                                 arcade.XYWH(*prop.rectangle), pixelated=False)
+
+    def draw_props(self, player, players):
+        for prop_id in self.draw_order(player.ground_position[1]):
+            if prop_id == "player":
+                players.draw(pixelated=True)
+                continue
+            prop = self.props[prop_id]
+            self.draw_prop(prop)
+            for decoration in self.decorations[prop_id]:
+                self.draw_prop(decoration)

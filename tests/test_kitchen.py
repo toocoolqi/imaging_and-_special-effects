@@ -1,27 +1,30 @@
 """Map checks: artwork, solid furniture, safe paths, and the reserved chop hook."""
 from collections import deque
 from math import isfinite
-from pathlib import Path
 
 import arcade
 import pytest
 
 from restaurant.game_view import create_window
 from restaurant.kitchen.layout import PROPS, ROOM_SOLIDS, SOLID_PROPS
-from restaurant.player.controller import HIT_BOX, PlayerController
+from restaurant.kitchen.scene import load_textures
+from restaurant.player.controller import (
+    FOOT_HALF_HEIGHT, FOOT_HALF_WIDTH, FOOT_OFFSET_Y, PlayerController,
+)
 from restaurant.shared.contracts import InteractionTarget
 from restaurant.shared.settings import (
     KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, SPAWN, TARGETS, WALL_RECTANGLES,
 )
 
-ASSETS = Path(__file__).resolve().parents[1] / "assets" / "kitchen"
-HALF_WIDTH = max(abs(x) for x, _ in HIT_BOX) * PLAYER_SCALE
-HALF_HEIGHT = max(abs(y) for _, y in HIT_BOX) * PLAYER_SCALE
+HALF_WIDTH = FOOT_HALF_WIDTH * PLAYER_SCALE
+HALF_HEIGHT = FOOT_HALF_HEIGHT * PLAYER_SCALE
+OFFSET_Y = FOOT_OFFSET_Y * PLAYER_SCALE
 
 
 def clear_center(point, margin=0.5):
-    """Expand furniture by the chef size, so a clear center fits the whole chef."""
+    """Expand furniture by the feet; translate sprite centers to ground space."""
     x, y = point
+    y += OFFSET_Y
     if not (HALF_WIDTH <= x <= KITCHEN_WIDTH - HALF_WIDTH and
             HALF_HEIGHT <= y <= KITCHEN_HEIGHT - HALF_HEIGHT):
         return False
@@ -37,6 +40,7 @@ def clear_segment(start, end):
     # expanded obstacle, including any thin rectangle between two clear nodes.
     left, right = sorted((start[0], end[0]))
     bottom, top = sorted((start[1], end[1]))
+    bottom, top = bottom + OFFSET_Y, top + OFFSET_Y
     return not any(
         left <= cx + width / 2 + HALF_WIDTH + 0.5 and
         right >= cx - width / 2 - HALF_WIDTH - 0.5 and
@@ -49,11 +53,9 @@ def clear_segment(start, end):
 def test_artwork_and_supports_match_solid_furniture():
     props = {prop.prop_id: prop for prop in PROPS}
     assert len(props) == len(PROPS)
-    assert WALL_RECTANGLES == ROOM_SOLIDS + tuple(prop.rectangle for prop in SOLID_PROPS)
-    for name in {"floor_tile"} | {prop.asset for prop in PROPS}:
-        path = ASSETS / f"{name}.png"
-        assert path.is_file(), name
-        image = arcade.load_texture(path).image
+    assert WALL_RECTANGLES == ROOM_SOLIDS + tuple(prop.collision_rectangle for prop in SOLID_PROPS)
+    for name, texture in load_textures().items():
+        image = texture.image
         assert image.width > 0 and image.height > 0
         assert image.getbbox() is not None, name
     for prop in PROPS:
@@ -63,6 +65,9 @@ def test_artwork_and_supports_match_solid_furniture():
         assert 0 <= prop.y - prop.height / 2 < prop.y + prop.height / 2 <= KITCHEN_HEIGHT
         if prop.support is None:
             assert prop.solid, f"Floor object {prop.prop_id} needs collision"
+            dx, dy, width, height = prop.footprint
+            assert abs(dx) + width / 2 <= prop.width / 2
+            assert abs(dy) + height / 2 <= prop.height / 2
         else:
             support = props[prop.support]
             assert not prop.solid and support.solid
@@ -116,6 +121,7 @@ def test_each_obstacle_blocks_its_accessible_sides(rectangle):
             start = [cx, cy]
             start[axis] += side * (half_extent + chef_half + 1.5)
             start[1 - axis] += fraction * (height if axis == 0 else width)
+            start[1] -= OFFSET_Y
             if not clear_center(start):
                 continue
             chef.reset(tuple(start))
@@ -123,7 +129,7 @@ def test_each_obstacle_blocks_its_accessible_sides(rectangle):
             for _ in range(6):
                 chef.update(1.0, walls)
                 assert not arcade.check_for_collision_with_list(chef.sprite, walls)
-                assert side * (chef.position[axis] - (cx, cy)[axis]) >= half_extent + chef_half - 0.1
+                assert side * (chef.ground_position[axis] - (cx, cy)[axis]) >= half_extent + chef_half - 0.1
             assert chef.state == "idle"
             checked += 1
     assert checked, f"No clear approach tested for obstacle {rectangle}"
@@ -152,5 +158,49 @@ def test_chopping_station_is_a_feedback_hook_only():
         view.on_update(1 / 60)
         assert view.interaction_count == 1
         assert "plate" in view.message.lower()
+    finally:
+        window.close()
+
+
+def test_chef_can_reach_counter_edge_and_is_occluded_only_when_behind():
+    window = create_window(visible=False)
+    try:
+        view = window.current_view
+        prop = next(p for p in PROPS if p.prop_id == "plate_counter")
+        _, base_y, _, base_h = prop.collision_rectangle
+        front_edge = base_y - base_h / 2
+        target = next(t for t in TARGETS if t.kind == "plate")
+        view.player.reset((target.x, target.y))
+        view.player.set_move_key("up", True)
+        for _ in range(20):
+            view.player.update(0.25, view.walls)
+        foot_y = view.player.ground_position[1]
+        assert 0 <= front_edge - (foot_y + HALF_HEIGHT) < 2
+        # The body can overlap the raised front, without feet entering it.
+        assert view.player.sprite.center_y + 46 > front_edge + 40
+        assert not arcade.check_for_collision_with_list(view.player.sprite, view.walls)
+        order = view.kitchen.draw_order(foot_y)
+        assert order.index("plate_counter") < order.index("player")
+        behind_y = base_y + base_h / 2 + HALF_HEIGHT + 2
+        view.player.reset((prop.x, behind_y - OFFSET_Y))
+        assert not arcade.check_for_collision_with_list(view.player.sprite, view.walls)
+        order = view.kitchen.draw_order(behind_y)
+        assert order.index("player") < order.index("plate_counter")
+        view.on_draw()
+    finally:
+        window.close()
+
+
+def test_service_hatch_uses_existing_serve_hook():
+    window = create_window(visible=False)
+    try:
+        view = window.current_view
+        target = next(t for t in TARGETS if t.kind == "serve")
+        view.player.reset((target.x, target.y))
+        view.on_key_press(arcade.key.E, 0)
+        view.on_update(1 / 60)
+        assert view.selected == target
+        assert view.interaction_count == 1
+        assert "dining room" in view.message
     finally:
         window.close()

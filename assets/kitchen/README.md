@@ -5,12 +5,19 @@ These prepared PNGs are crops of the user's two supplied presentation sheets:
 - Warm tiled kitchen, stove, bin, serving table and chopping board: 1408 x 768.
 - Ingredient icons/crates, plate and pot: 1280 x 853.
 
-No image generation was used. `floor_tile.png` repeats at one consistent size
-over the whole room; separate furniture supplies the same low top-down style
-everywhere. `back_wall.png` is a legacy reference crop and is NOT loaded or
-drawn by the game. Separate props have transparent backgrounds; only
+These original crops were prepared without image generation. The current game
+uses Arcade-drawn tiles for crisp, quiet flooring; `floor_tile.png`, `board.png`
+and `back_wall.png` are legacy reference crops and are NOT loaded or drawn.
+Separate original props have transparent backgrounds; only
 background connected to crop edges and disconnected crop debris were removed.
 The preview image is for inspecting assets and is not drawn in the game.
+
+`restaurant_details.png` is a new transparent six-sprite atlas prepared with
+the built-in imagegen tool, using the supplied kitchen as a style reference.
+It provides the sink, pass counter, spice shelf, extractor, board and dining-room
+hatch. Arcade crops its regions at load time; `restaurant/kitchen/scene.py`
+records the coordinates. The original atlas is preserved with its transparency.
+See [artwork notes and full prompt](../../docs/artwork_notes.md).
 
 `crops.json` records exact top-left sheet coordinates. Recreate them, if needed:
 

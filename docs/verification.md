@@ -1,66 +1,29 @@
 # Delivery verification
 
-## Corrected room and display sizing — v0.3.0, 21 October 2026
+## Restaurant design and closer collisions — v0.4.0, 21 October 2026
 
-Windows 11, Python 3.12.14, Arcade 3.3.3. **66 source tests** and **34 packaged
-application checks** passed. The packaged ZIP was extracted into a folder with
-spaces and run without Python/source search paths. Both the default and resized
-renderings were visually inspected.
+Windows 11, Python 3.12.14, Arcade 3.3.3. **69 source tests** and **36 packaged
+application checks** passed. The standalone ZIP was extracted into a new folder
+with spaces, then run with Python/source paths removed from its environment.
+The normal scene, resized scene and collision overlay were visually inspected.
 
-- No perspective back-wall strip; one low top-down room from edge to edge.
-- Chef sprite 56 x 92, stable hitbox 48 x 86; all obstacle faces and exact station
-  routes tested again for the enlarged chef.
-- Sizing regression tests cover 100%, 125%, 150% and 200% Windows scaling with
-  1920, 1366 and 1280-pixel desktop widths.
-- On this desktop at 125% scaling, the default client was 1040 x 624 logical
-  units / 1300 x 780 physical pixels. Its complete native outer window rectangle
-  (including title bar) was inside the monitor work area.
-- Actual window resize tests preserve the whole 1280 x 768 view and its aspect
-  ratio; text rasterizes at its displayed font size rather than shrinking glyphs.
+- Kitchen area reduced about 14%, to 960 x 704; chef retains its native size.
+- Plate island contains only the plate; pot sits over one stove burner.
+- Matching sink, shelves, extractor, board and restaurant service hatch; the
+  hatch visibly opens onto a dining room and retains the existing serve ID.
+- All furniture bases checked from every accessible side. Exact station
+  reachability includes the fixed 32 x 20 foot hitbox, offset 32 pixels down.
+- Close approach verified: the feet stop within 2 pixels of a table base.
+  Front/behind drawing order tested, including actual rendering behind a table.
+- Input, animation, idle/facing, wall sliding, thin obstacles, pause/reset/focus,
+  one E action per key press and feedback-only cutting/serving remain covered.
+- Display-scale checks retain 100%, 125%, 150% and 200% cases. The actual default
+  client was 1040 x 601 logical units / 1300 x 752 physical pixels at 125%.
+  Its complete native outer frame remained inside the desktop work area.
+- Runtime uses Arcade and Python's standard library. Artwork is bundled.
+  Ingredient, cutting and order behavior remain future integration work.
 
-![Corrected packaged kitchen](images/kitchen_preview.png)
+![Verified standalone kitchen](images/kitchen_preview.png)
 
-The earlier v0.2.0 release remains available for history; use v0.3.0 for this fix.
-
-## Expanded kitchen — 21 October 2026
-
-Windows 11, Python 3.12.14, Arcade 3.3.3. The final source passed **50 tests**.
-The rebuilt Windows ZIP passed **30 executable-level checks** after extraction
-into a separate folder with spaces and removal of Python/source search paths.
-The normal scene and F1 collision overlay were captured and visually inspected.
-
-- Movement, animation, stable idle/facing, input, pause/reset/focus and rendering.
-- Exact reachability of every station from spawn, accounting for the whole chef.
-- Actual controller movement into every accessible face of every room/furniture
-  obstacle, including stalled updates; no overlap or crossing allowed.
-- All floor props have solids; table decorations fit inside their solid support.
-- Chopping station E/Q routing remains feedback only. Food state is not created.
-- The enlarged 1280 x 960 room and 300-pixel sidebar scale together for the display.
-- Build includes the prepared background and item PNGs as well as chef frames.
-
-![Verified packaged kitchen](images/kitchen_preview.png)
-
-The ingredient, order and cutting implementations remain future work. This
-verification was performed on this Windows machine, not teammates' computers.
-
-## Initial player starter
-
-Verified on 5 October 2026 with Windows 11, Python 3.12.14 and Arcade 3.3.3.
-The completed GitHub checkout was verified again on 6 October 2026 in a fresh
-environment: all 34 tests passed, including the graphical tests.
-
-- Shared starter: **34 tests passed**, including real Arcade rendering.
-- Compiled Windows app: **16 executable-level checks passed**.
-- The delivered Windows ZIP was extracted into a separate folder containing
-  spaces, then tested with Python/source paths removed from the environment.
-  All 16 checks passed again. The executable used its own bundled runtime/assets.
-- App checks exercise four-direction movement, animation and idle facing,
-  counter collision, one interaction per press, pause, rendering and exit.
-- The original player suite also covers input cancellation, diagonal speed,
-  wall sliding, thin walls, bounds, dual movement keys, focus loss and reset.
-- Shared record tests cover immutable snapshots, invalid IDs/revisions and
-  compatibility between the future ingredient and order systems.
-
-This is player-demo and shared-foundation verification. The ingredient/order
-implementations have not been written or tested. No claim is made that the app
-has been tested on other computers or operating systems.
+Earlier v0.1, v0.2 and v0.3 releases remain available for history. This verification
+covers the local Windows machine, not other teammates' computers.

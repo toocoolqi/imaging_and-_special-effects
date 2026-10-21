@@ -20,6 +20,7 @@ there are no fake ingredient/order implementations here.
 | `set_move_key(direction, pressed)` | Set canonical `up/down/left/right` input |
 | `update(delta_time, walls)` | Move, collide and animate; call once per update |
 | `position` | Read-only `(x, y)` chef center |
+| `ground_position` | Foot center, 32 pixels below `position`; use for depth/shadows |
 | `direction` | Read-only facing; retained while idle |
 | `state` / `is_moving` | `idle` or `walk` / whether actual movement occurred |
 | `sprite` | Arcade sprite; add to a SpriteList for drawing |
@@ -79,17 +80,17 @@ as described in the original member guides. Keep those calls together in the
 scene. Ingredient state belongs to Member 2; order state belongs to Member 3.
 The player module does not need to change. No held-item animations are included.
 
-The sidebar is `(left=1024, bottom=0, width=256, height=768)` in world coordinates. Replace the demo's
+The sidebar is `(left=960, bottom=0, width=256, height=704)` in world coordinates. Replace the demo's
 sidebar drawing with Member 3's renderer when it is ready. Keep player feedback
 somewhere visible. Reset/pause must eventually cover all systems together.
 
 ## Collision and layout rules
 
-- Coordinates start at bottom-left. Kitchen width is 1024 and height is 768.
+- Coordinates start at bottom-left. Kitchen width is 960 and height is 704.
 - Furniture pictures, solids and approaches share `restaurant/kitchen/layout.py`.
   `WALL_RECTANGLES`/`TARGETS` remain available through shared settings.
   Read [kitchen notes](kitchen_layout.md) before changing this map.
-- The camera scales the whole 1280 x 768 scene without stretching. The resizable
+- The camera scales the whole 1216 x 704 scene without stretching. The resizable
   startup window accounts for Windows DPI and monitor work area; see
   `restaurant/display.py`. Movement and collisions use world pixels. Text uses
   a separate screen camera and displayed font size, so resizing keeps it legible.
@@ -97,8 +98,10 @@ somewhere visible. Reset/pause must eventually cover all systems together.
   The same SpriteList can be edited when the layout changes. Replacing the list
   is supported too. Rotated/moving obstacles are outside this demo's contract.
 - Spawn the chef on clear floor. Reset does not search for a free spawn point.
-- The fixed hitbox is 48 by 86 world pixels. It stays identical
-  across animations. F1 shows it. The chef center is the interaction origin.
+- The fixed foot hitbox is 32 by 20 world pixels, centered 32 pixels below the
+  sprite center. It stays identical across animations. F1 shows it. The chef
+  center remains the interaction origin. Furniture uses its measured base,
+  while drawing order uses feet so raised counters can occlude the chef.
 - Motion uses 200 pixels per second, normalized diagonals, and Arcade's
   PhysicsEngineSimple with steps no longer than 2 pixels to prevent tunneling.
   A stalled update consumes at most 0.25 seconds of movement/animation; excess

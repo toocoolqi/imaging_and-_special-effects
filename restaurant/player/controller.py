@@ -11,8 +11,10 @@ from restaurant.shared.settings import (
 
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "player"
 VECTORS = {"up": (0, 1), "down": (0, -1), "left": (-1, 0), "right": (1, 0)}
-# Same rectangle for EVERY frame; animation never changes collision dimensions.
-HIT_BOX = ((-24, -43), (24, -43), (24, 43), (-24, 43))
+# A top-down character collides at the feet, not with the hat and shoulders.
+# Keep this same footprint for EVERY frame. Visual size stays 56 x 92.
+FOOT_HALF_WIDTH, FOOT_HALF_HEIGHT, FOOT_OFFSET_Y = 16, 10, -32
+HIT_BOX = ((-16, -42), (16, -42), (16, -22), (-16, -22))
 
 
 def movement_vector(keys) -> tuple[float, float]:
@@ -50,6 +52,14 @@ class PlayerController:
         return self.sprite.center_x, self.sprite.center_y
 
     @property
+    def ground_position(self) -> tuple[float, float]:
+        """Center of the feet, for depth sorting and ground effects.
+
+        position remains the sprite center used by existing station hooks.
+        """
+        return self.sprite.center_x, self.sprite.center_y + FOOT_OFFSET_Y * PLAYER_SCALE
+
+    @property
     def direction(self) -> Direction:
         return self._direction
 
@@ -82,9 +92,11 @@ class PlayerController:
         self._clamp_to_kitchen()
 
     def _clamp_to_kitchen(self) -> None:
-        half_width, half_height = 24 * PLAYER_SCALE, 43 * PLAYER_SCALE
+        half_width, half_height = FOOT_HALF_WIDTH * PLAYER_SCALE, FOOT_HALF_HEIGHT * PLAYER_SCALE
+        offset = FOOT_OFFSET_Y * PLAYER_SCALE
         self.sprite.center_x = max(half_width, min(KITCHEN_WIDTH - half_width, self.sprite.center_x))
-        self.sprite.center_y = max(half_height, min(KITCHEN_HEIGHT - half_height, self.sprite.center_y))
+        self.sprite.center_y = max(half_height - offset,
+                                   min(KITCHEN_HEIGHT - half_height - offset, self.sprite.center_y))
 
     def update(self, delta_time: float, walls: arcade.SpriteList) -> None:
         """Move/collide/animate exactly once per scene update.

@@ -4,7 +4,9 @@ import math
 import arcade
 import pytest
 
-from restaurant.player.controller import PlayerController, movement_vector
+from restaurant.player.controller import (
+    FOOT_HALF_HEIGHT, FOOT_HALF_WIDTH, FOOT_OFFSET_Y, PlayerController, movement_vector,
+)
 from restaurant.player.interaction import choose_target
 from restaurant.shared.contracts import InteractionTarget
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION
@@ -101,13 +103,13 @@ def test_cannot_cross_thin_walls_even_after_stall(direction, spawn, rect):
         chef.update(1.0, walls)
         assert not arcade.check_for_collision(chef.sprite, wall)
     if direction == "right":
-        assert chef.position[0] < x
+        assert chef.ground_position[0] < x
     elif direction == "left":
-        assert chef.position[0] > x
+        assert chef.ground_position[0] > x
     elif direction == "up":
-        assert chef.position[1] < y
+        assert chef.ground_position[1] < y
     else:
-        assert chef.position[1] > y
+        assert chef.ground_position[1] > y
     assert chef.state == "idle"
 
 
@@ -125,10 +127,10 @@ def test_diagonal_slides_along_wall():
 
 
 @pytest.mark.parametrize("direction,axis,limit,sign", [
-    ("right", 0, KITCHEN_WIDTH - 24 * PLAYER_SCALE, 1),
-    ("left", 0, 24 * PLAYER_SCALE, -1),
-    ("up", 1, KITCHEN_HEIGHT - 43 * PLAYER_SCALE, 1),
-    ("down", 1, 43 * PLAYER_SCALE, -1),
+    ("right", 0, KITCHEN_WIDTH - FOOT_HALF_WIDTH * PLAYER_SCALE, 1),
+    ("left", 0, FOOT_HALF_WIDTH * PLAYER_SCALE, -1),
+    ("up", 1, KITCHEN_HEIGHT - (FOOT_HALF_HEIGHT + FOOT_OFFSET_Y) * PLAYER_SCALE, 1),
+    ("down", 1, (FOOT_HALF_HEIGHT - FOOT_OFFSET_Y) * PLAYER_SCALE, -1),
 ])
 def test_kitchen_bounds_without_wall_list(direction, axis, limit, sign):
     chef = PlayerController(ANIMATION_TEST_POSITION)

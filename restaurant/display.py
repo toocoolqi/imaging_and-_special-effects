@@ -38,7 +38,7 @@ def work_area(window):
 
 
 def fitted_window_size(width, height, dpi_scale=1.0):
-    """Prefer a comfortable 1040x624 logical window, with physical frame margins."""
+    """Prefer 1040 logical pixels wide, retaining aspect ratio and frame margins."""
     scale = min(1040 / WINDOW_WIDTH,
                 max(1, width - 64) / (WINDOW_WIDTH * dpi_scale),
                 max(1, height - 100) / (WINDOW_HEIGHT * dpi_scale))

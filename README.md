@@ -5,16 +5,16 @@ system is working now. Ingredients/plates and customer/orders have reserved
 folders and shared data definitions, ready for the other members to implement.
 
 The tiled kitchen uses one consistent low top-down view across the entire room,
-with the supplied prop images, solid furniture and a separate chopping-board
-table. The chef is enlarged to suit the furniture. Its 1024 x 768 world and
+with supplied prop images, a service hatch into the dining room and a chopping-board
+table. The chef is enlarged to suit the furniture. Its compact 960 x 704 world and
 256-pixel sidebar fit inside a comfortable, resizable window that accounts for
 Windows display scaling and the taskbar. Food/cutting stay preview-only.
 See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.3.0.zip** from the
-[corrected kitchen demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.3.0).
+Download **kitchen-demo-windows-v0.4.0.zip** from the
+[polished restaurant demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.4.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -50,7 +50,7 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | Key | Action |
 | --- | --- |
 | WASD / arrows | Move, with equal straight and diagonal speed |
-| E | Interact once with the nearest floor marker within 64 pixels |
+| E | Interact once with the nearest station within 64 pixels |
 | Q | Plate-removal intent (feedback only for now) |
 | P | Pause/resume |
 | R | Reset |
