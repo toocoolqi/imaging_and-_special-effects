@@ -7,7 +7,10 @@ import pytest
 from restaurant.player.controller import PlayerController, movement_vector
 from restaurant.player.interaction import choose_target
 from restaurant.shared.contracts import InteractionTarget
-from restaurant.shared.settings import PLAYER_SCALE, TARGETS, WALL_RECTANGLES
+from restaurant.kitchen.layout import ANIMATION_TEST_POSITION
+from restaurant.shared.settings import (
+    KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, SPAWN, TARGETS, WALL_RECTANGLES,
+)
 
 
 def target(name, x, y=0):
@@ -45,13 +48,13 @@ def test_target_boundary_ties_and_nearest():
     ("up", 1, 1), ("down", 1, -1), ("left", 0, -1), ("right", 0, 1),
 ])
 def test_movement_animation_idle(direction, axis, sign):
-    chef = PlayerController((450, 360))
+    chef = PlayerController(ANIMATION_TEST_POSITION)
     walls = arcade.SpriteList()
     chef.set_move_key(direction, True)
     chef.update(0.1, walls)
     first_walk = chef.sprite.texture
     chef.update(0.1, walls)
-    assert chef.position[axis] == pytest.approx((450, 360)[axis] + sign * 40, abs=0.1)
+    assert chef.position[axis] == pytest.approx(ANIMATION_TEST_POSITION[axis] + sign * 40, abs=0.1)
     assert chef.sprite.texture is not first_walk
     assert chef.direction == direction
     assert chef.state == "walk"
@@ -122,13 +125,13 @@ def test_diagonal_slides_along_wall():
 
 
 @pytest.mark.parametrize("direction,axis,limit,sign", [
-    ("right", 0, 900 - 24 * PLAYER_SCALE, 1),
+    ("right", 0, KITCHEN_WIDTH - 24 * PLAYER_SCALE, 1),
     ("left", 0, 24 * PLAYER_SCALE, -1),
-    ("up", 1, 720 - 43 * PLAYER_SCALE, 1),
+    ("up", 1, KITCHEN_HEIGHT - 43 * PLAYER_SCALE, 1),
     ("down", 1, 43 * PLAYER_SCALE, -1),
 ])
 def test_kitchen_bounds_without_wall_list(direction, axis, limit, sign):
-    chef = PlayerController((450, 360))
+    chef = PlayerController(ANIMATION_TEST_POSITION)
     walls = arcade.SpriteList()
     chef.set_move_key(direction, True)
     for _ in range(30):
@@ -138,7 +141,7 @@ def test_kitchen_bounds_without_wall_list(direction, axis, limit, sign):
 
 def test_all_target_points_are_clear_and_selectable():
     walls = walls_from_layout()
-    chef = PlayerController((450, 170))
+    chef = PlayerController(SPAWN)
     for item in TARGETS:
         chef.reset((item.x, item.y))
         assert not arcade.check_for_collision_with_list(chef.sprite, walls)

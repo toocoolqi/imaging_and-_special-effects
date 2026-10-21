@@ -4,10 +4,15 @@ One shared Python Arcade project for all three members. The Classic Chef player
 system is working now. Ingredients/plates and customer/orders have reserved
 folders and shared data definitions, ready for the other members to implement.
 
+The expanded tiled kitchen now includes the supplied background and prop images,
+solid furniture, wider aisles and a separate chopping-board table. It is
+1280 x 960 world pixels, with an automatically scaled window for smaller screens.
+Food and cutting stay preview-only. See [kitchen layout notes](docs/kitchen_layout.md).
+
 ## Play without the repository
 
-Download **player-demo-windows.zip** from the
-[standalone demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/player-demo-v0.1.0).
+Download **kitchen-demo-windows-v0.2.0.zip** from the
+[updated kitchen demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.2.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -52,6 +57,7 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 
 No hold-item animations are included. The current stations report interactions;
 they do not collect food, assemble plates, serve orders or award points yet.
+The chopping table's E preview is reserved for the future cutting system.
 
 ## Each member's starting point
 
@@ -64,6 +70,10 @@ they do not collect food, assemble plates, serve orders or award points yet.
 All members use `restaurant/shared/contracts.py` and `settings.py`. The immutable
 records are already defined there. Coordinate shared changes before editing;
 never create a second copy of another member's state or contracts.
+
+Room furniture, solids and station approach points live together in
+`restaurant/kitchen/layout.py`; artwork rendering lives in `scene.py`. The
+new `chop` target kind adds a cutting-system hook without changing food IDs.
 
 Member 2 starts with `models.py` and `system.py`, then adds `renderer.py`,
 `demos/ingredients_demo.py`, and `tests/test_ingredients.py`.

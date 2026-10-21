@@ -19,7 +19,8 @@ use `git switch BRANCH_NAME` instead of creating it again.
 
 ## Files and ownership
 
-- Member 1: player code/assets and the main game view. Coordinates shared files.
+- Member 1: player code/assets, `restaurant/kitchen/`, and the main game view.
+  Coordinates shared files; kitchen placement notes are in `docs/kitchen_layout.md`.
 - Member 2: ingredients/plate code, assets, independent demo and tests.
 - Member 3: orders/sidebar code, assets, independent demo and tests.
 - Shared: `restaurant/shared/`, dependencies, launch/build files and README.

@@ -6,7 +6,7 @@ import arcade
 
 from restaurant.shared.contracts import Direction
 from restaurant.shared.settings import (
-    FRAME_SECONDS, KITCHEN_WIDTH, PLAYER_SCALE, PLAYER_SPEED, WINDOW_HEIGHT,
+    FRAME_SECONDS, KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, PLAYER_SPEED,
 )
 
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "player"
@@ -84,7 +84,7 @@ class PlayerController:
     def _clamp_to_kitchen(self) -> None:
         half_width, half_height = 24 * PLAYER_SCALE, 43 * PLAYER_SCALE
         self.sprite.center_x = max(half_width, min(KITCHEN_WIDTH - half_width, self.sprite.center_x))
-        self.sprite.center_y = max(half_height, min(WINDOW_HEIGHT - half_height, self.sprite.center_y))
+        self.sprite.center_y = max(half_height, min(KITCHEN_HEIGHT - half_height, self.sprite.center_y))
 
     def update(self, delta_time: float, walls: arcade.SpriteList) -> None:
         """Move/collide/animate exactly once per scene update.

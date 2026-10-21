@@ -28,7 +28,7 @@ there are no fake ingredient/order implementations here.
 | `choose_target(position, targets, radius=64.0)` | Return nearest target or `None` |
 
 `InteractionTarget(target_id, kind, x, y, ingredient_id=None)` is immutable.
-Kinds are `box`, `plate`, `bin`, and `serve`. Box ingredient IDs are `lettuce`,
+Kinds are `box`, `plate`, `bin`, `serve`, and `chop`. Box ingredient IDs are `lettuce`,
 `tomato`, `bread`, and `cheese`. Other target kinds must leave ingredient_id empty.
 Target IDs must be unique. Range includes exactly 64 pixels, uses Euclidean
 distance, and resolves ties alphabetically by ID. Facing is not required.
@@ -70,6 +70,7 @@ demo feedback with calls to their public APIs:
 | `remove` + plate | `ingredients.remove_from_plate()` |
 | `interact` + bin | `ingredients.discard()` |
 | `interact` + serve | Submit a plate snapshot through the agreed serving flow |
+| `interact` + chop | Reserved cutting-system entry point; currently feedback only |
 | No target / remove away from plate | Show feedback; mutate no state |
 
 For future serving, advance order timers first, take `ingredients.snapshot().plate`,
@@ -78,13 +79,18 @@ as described in the original member guides. Keep those calls together in the
 scene. Ingredient state belongs to Member 2; order state belongs to Member 3.
 The player module does not need to change. No held-item animations are included.
 
-The sidebar is `(left=900, bottom=0, width=300, height=720)`. Replace the demo's
+The sidebar is `(left=1280, bottom=0, width=300, height=960)` in world coordinates. Replace the demo's
 sidebar drawing with Member 3's renderer when it is ready. Keep player feedback
 somewhere visible. Reset/pause must eventually cover all systems together.
 
 ## Collision and layout rules
 
-- Coordinates start at bottom-left. Kitchen width is 900 and height is 720.
+- Coordinates start at bottom-left. Kitchen width is 1280 and height is 960.
+- Furniture pictures, solids and approaches share `restaurant/kitchen/layout.py`.
+  `WALL_RECTANGLES`/`TARGETS` remain available through shared settings.
+  Read [kitchen notes](kitchen_layout.md) before changing this map.
+- The camera scales the whole 1580 x 960 scene to fit the display. Movement and
+  collision calculations always use world pixels, independent of screen size.
 - Add solid, static, axis-aligned wall/counter sprites to `self.walls`.
   The same SpriteList can be edited when the layout changes. Replacing the list
   is supported too. Rotated/moving obstacles are outside this demo's contract.

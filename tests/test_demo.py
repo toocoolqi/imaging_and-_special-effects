@@ -6,6 +6,12 @@ import arcade
 import pytest
 
 from restaurant.game_view import create_window
+from restaurant.kitchen.layout import ANIMATION_TEST_POSITION
+from restaurant.shared.settings import SPAWN, TARGETS, WALL_RECTANGLES
+
+
+def station(kind):
+    return next(target for target in TARGETS if target.kind == kind)
 
 
 @pytest.fixture(scope="module")
@@ -36,7 +42,8 @@ def test_shared_direction_keys(view):
 
 
 def test_one_action_per_press_and_plate_hook(view):
-    view.player.reset((450, 275))
+    plate = station("plate")
+    view.player.reset((plate.x, plate.y))
     for _ in range(5):
         view.on_key_press(arcade.key.E, 0)
     view.on_update(1 / 60)
@@ -74,10 +81,12 @@ def test_pause_reset_and_focus_loss(view, window):
 
 
 def test_out_of_range_and_wrong_q_target(view):
+    view.player.reset(SPAWN)
     view.on_key_press(arcade.key.E, 0)
     view.on_update(0.01)
     assert view.interaction_count == 0
-    view.player.reset((130, 520))
+    box = station("box")
+    view.player.reset((box.x, box.y))
     view.on_key_press(arcade.key.Q, 0)
     view.on_update(0.01)
     assert view.interaction_count == 0
@@ -85,8 +94,10 @@ def test_out_of_range_and_wrong_q_target(view):
 
 
 def test_real_render_all_directions_debug_and_pause(view):
+    assert view.kitchen is not None
+    assert len(view.walls) == len(WALL_RECTANGLES)
     for key in (arcade.key.W, arcade.key.S, arcade.key.A, arcade.key.D):
-        view.player.reset((250, 300))
+        view.player.reset(ANIMATION_TEST_POSITION)
         view.on_key_press(key, 0)
         for _ in range(4):
             view.on_update(0.14)

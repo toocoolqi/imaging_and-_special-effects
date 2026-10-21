@@ -5,7 +5,7 @@ from typing import Literal
 
 Direction = Literal["up", "down", "left", "right"]
 IngredientId = Literal["lettuce", "tomato", "bread", "cheese"]
-TargetKind = Literal["box", "plate", "bin", "serve"]
+TargetKind = Literal["box", "plate", "bin", "serve", "chop"]
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class InteractionTarget:
     ingredient_id: IngredientId | None = None
 
     def __post_init__(self):
-        if not self.target_id or self.kind not in ("box", "plate", "bin", "serve"):
+        if not self.target_id or self.kind not in ("box", "plate", "bin", "serve", "chop"):
             raise ValueError("Target needs a nonempty ID and a valid kind.")
         if not isfinite(self.x) or not isfinite(self.y):
             raise ValueError("Target coordinates must be finite.")
