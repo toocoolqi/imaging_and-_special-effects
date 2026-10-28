@@ -28,8 +28,8 @@ there are no fake ingredient/order implementations here.
 | `choose_target(position, targets, radius=64.0)` | Return nearest target or `None` |
 
 `InteractionTarget(target_id, kind, x, y, ingredient_id=None)` is immutable.
-Kinds are `box`, `plate`, `bin`, and `serve`. Box ingredient IDs are `lettuce`,
-`tomato`, `bread`, and `cheese`. Other target kinds must leave ingredient_id empty.
+Kinds are `box`, `plate`, `bin`, and `serve`. Box ingredient IDs are `sandwich`,
+`tomato`, `noodles`, and `milk`. Other target kinds must leave ingredient_id empty.
 Target IDs must be unique. Range includes exactly 64 pixels, uses Euclidean
 distance, and resolves ties alphabetically by ID. Facing is not required.
 

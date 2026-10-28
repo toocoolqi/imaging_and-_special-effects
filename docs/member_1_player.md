@@ -74,11 +74,11 @@ Use these fixed rules until a reviewed change is agreed:
 - Chef speed: 200 pixels/second. WASD and arrow keys move. Diagonal movement is normalized so it is not faster.
 - E performs one nearby interaction per key press; holding E does not repeat. Q removes the most recently added ingredient at the plate station. Removal is allowed only when the chef's hand is empty and transfers that ingredient into the hand.
 - One chef, one held ingredient, one stationary plate with capacity 4. No carried plate or inventory menu.
-- Ingredient IDs: `lettuce`, `tomato`, `bread`, `cheese`. Boxes have unlimited stock. IDs are lowercase strings; display names and images are separate.
+- Ingredient IDs: `sandwich`, `tomato`, `noodles`, `milk`. Boxes have unlimited stock. IDs are lowercase strings; display names and images are separate.
 - Plate contents can contain repeated ingredients. Order matching uses ingredient counts and ignores insertion order. Missing ingredients, extra ingredients, and wrong quantities all fail.
 - The bin discards the held ingredient. If the hand is empty, it clears the entire plate. No undo.
 - Three active orders, each with 60 seconds of patience. Orders are automatically accepted when generated; there is no separate “take order” button.
-- Generate only these recipes: salad=(lettuce, tomato); sandwich=(bread, cheese, tomato); cheese toast=(bread, cheese). These are assembly recipes; no heating is required.
+- Recipe catalogue: pending team agreement for `sandwich`, `tomato`, `noodles`, and `milk`. These are collected items; no heating is required. Do not use the previous salad/sandwich/cheese-toast ingredient combinations.
 - Start with three orders. On success or expiry, immediately replace that order with a new one at the end of the queue. Each order has a unique, increasing integer ID.
 - Display accepted total, completed total, expired total, and score. Accepted includes every generated order, including the initial three and replacements. Each completion adds 100 points; expiry adds no points and no penalty.
 - Timers use seconds from `delta_time`. Pausing freezes gameplay and timers. At zero or below an order expires before a queued serving action is processed that frame.
@@ -147,7 +147,7 @@ Use an existing agreed Python/Arcade environment if the repository already has o
 Implement these records in `restaurant/shared/contracts.py` as frozen dataclasses. Collection fields are tuples so callers cannot mutate another system's state. Python type hints do not validate values automatically; constructors or system boundaries must validate them.
 
 ```python
-IngredientId = Literal["lettuce", "tomato", "bread", "cheese"]
+IngredientId = Literal["sandwich", "tomato", "noodles", "milk"]
 TargetKind = Literal["box", "plate", "bin", "serve"]
 Direction = Literal["up", "down", "left", "right"]
 

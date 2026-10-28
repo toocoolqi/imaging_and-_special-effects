@@ -124,7 +124,7 @@ class GameView(arcade.View):
         for y in range(20, 701, 40):
             arcade.draw_line(20, y, 880, y, (206, 207, 192), 1)
         self.walls.draw()
-        for i, name in enumerate(("LETTUCE", "TOMATO", "BREAD", "CHEESE")):
+        for i, name in enumerate(("SANDWICH", "TOMATO", "NOODLES", "MILK")):
             self.text(f"box{i}", name, 130 + i * 190, 600, 13, anchor_x="center", anchor_y="center")
         for name, x, y in (("PLATE", 450, 360), ("BIN", 130, 120), ("SERVE", 750, 120)):
             self.text(name, name, x, y, 14, anchor_x="center", anchor_y="center")

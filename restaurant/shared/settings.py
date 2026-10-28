@@ -19,10 +19,10 @@ WALL_RECTANGLES = (
     (130, 120, 130, 70), (750, 120, 170, 70),
 )
 TARGETS = (
-    InteractionTarget("box_lettuce", "box", 130, 520, "lettuce"),
+    InteractionTarget("box_sandwich", "box", 130, 520, "sandwich"),
     InteractionTarget("box_tomato", "box", 320, 520, "tomato"),
-    InteractionTarget("box_bread", "box", 510, 520, "bread"),
-    InteractionTarget("box_cheese", "box", 700, 520, "cheese"),
+    InteractionTarget("box_noodles", "box", 510, 520, "noodles"),
+    InteractionTarget("box_milk", "box", 700, 520, "milk"),
     InteractionTarget("plate", "plate", 450, 275),
     InteractionTarget("bin", "bin", 130, 205),
     InteractionTarget("serve", "serve", 750, 205),

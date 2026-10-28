@@ -1,0 +1,9 @@
+Tool: built-in image_gen, transparent_background=true
+Input: Pixel Cooking Game Asset Sheet.png
+
+Use case: background-extraction. Edit target: supplied pixel cooking asset sheet, 1536x1024. Prepare a transparent sprite atlas preserving the original artwork, scale, positions and layout exactly. Remove ONLY the dark gray background, all headings, divider lines, captions underneath objects, and bottom palette panel. Retain all 12 separate objects: top left sandwich/tomato/noodles/milk, top right four ingredient crates, bottom left large plate, bottom right three pots including steam. Retain the printed labels ON crates and milk carton. Every object must be isolated with transparent gaps. No new assets, no redesign, no rearranging, no resizing, no text outside sprites. Crisp pixel edges and actual alpha transparency. Preserve original 1536x1024 canvas and coordinates for subsequent sprite slicing.
+
+Postprocessing: deterministic PowerShell/System.Drawing slices; alpha below 128
+removed, retained pixels made opaque, transparent margins trimmed, two pixels
+of transparent padding added. The image tool may alter fine details; the source
+sheet is preserved for comparison.

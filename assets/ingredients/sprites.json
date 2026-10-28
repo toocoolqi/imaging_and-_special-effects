@@ -1,0 +1,134 @@
+{
+  "sandwich": {
+    "file": "sprites/sandwich.png",
+    "width": 151,
+    "height": 141,
+    "atlas_region": [
+      25,
+      155,
+      175,
+      200
+    ]
+  },
+  "tomato": {
+    "file": "sprites/tomato.png",
+    "width": 124,
+    "height": 130,
+    "atlas_region": [
+      205,
+      155,
+      155,
+      200
+    ]
+  },
+  "noodles": {
+    "file": "sprites/noodles.png",
+    "width": 143,
+    "height": 141,
+    "atlas_region": [
+      365,
+      155,
+      170,
+      200
+    ]
+  },
+  "milk": {
+    "file": "sprites/milk.png",
+    "width": 108,
+    "height": 183,
+    "atlas_region": [
+      545,
+      150,
+      140,
+      205
+    ]
+  },
+  "box_sandwich": {
+    "file": "sprites/box_sandwich.png",
+    "width": 192,
+    "height": 252,
+    "atlas_region": [
+      725,
+      145,
+      200,
+      275
+    ]
+  },
+  "box_tomato": {
+    "file": "sprites/box_tomato.png",
+    "width": 192,
+    "height": 252,
+    "atlas_region": [
+      925,
+      145,
+      190,
+      275
+    ]
+  },
+  "box_noodles": {
+    "file": "sprites/box_noodles.png",
+    "width": 191,
+    "height": 252,
+    "atlas_region": [
+      1115,
+      145,
+      195,
+      275
+    ]
+  },
+  "box_milk": {
+    "file": "sprites/box_milk.png",
+    "width": 193,
+    "height": 252,
+    "atlas_region": [
+      1310,
+      145,
+      210,
+      275
+    ]
+  },
+  "plate": {
+    "file": "sprites/plate.png",
+    "width": 450,
+    "height": 301,
+    "atlas_region": [
+      60,
+      550,
+      490,
+      330
+    ]
+  },
+  "pot_empty": {
+    "file": "sprites/pot_empty.png",
+    "width": 265,
+    "height": 214,
+    "atlas_region": [
+      620,
+      545,
+      280,
+      275
+    ]
+  },
+  "pot_cooking": {
+    "file": "sprites/pot_cooking.png",
+    "width": 265,
+    "height": 225,
+    "atlas_region": [
+      915,
+      545,
+      280,
+      275
+    ]
+  },
+  "pot_cooked": {
+    "file": "sprites/pot_cooked.png",
+    "width": 266,
+    "height": 234,
+    "atlas_region": [
+      1205,
+      545,
+      295,
+      275
+    ]
+  }
+}
