@@ -4,7 +4,8 @@ from PyInstaller.utils.hooks import collect_submodules
 
 root = Path(SPECPATH)
 data = [(str(root / "assets" / "player"), "assets/player"),
-        (str(root / "assets" / "kitchen"), "assets/kitchen")]
+        (str(root / "assets" / "kitchen"), "assets/kitchen"),
+        (str(root / "assets" / "ingredients"), "assets/ingredients")]
 hidden = collect_submodules("pyglet")
 
 a = Analysis(

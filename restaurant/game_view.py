@@ -7,6 +7,7 @@ import arcade
 from restaurant.display import fit_window, scene_viewport
 from restaurant.kitchen.layout import TARGET_LABELS
 from restaurant.kitchen.scene import KitchenScene
+from restaurant.ingredients import IngredientSystem
 from restaurant.player.controller import PlayerController
 from restaurant.player.interaction import choose_target
 from restaurant.shared.settings import (
@@ -37,6 +38,7 @@ class GameView(arcade.View):
         self.players = arcade.SpriteList()
         self.players.append(self.player.sprite)
         self.kitchen = KitchenScene()
+        self.ingredients = IngredientSystem()
         self.walls = arcade.SpriteList(use_spatial_hash=True)
         for x, y, width, height in WALL_RECTANGLES:
             self.walls.append(arcade.SpriteSolidColor(width, height, x, y))
@@ -91,6 +93,7 @@ class GameView(arcade.View):
 
     def reset(self):
         self.clear_input()
+        self.ingredients.reset()
         self.player.reset(SPAWN)
         self.paused = False
         self.selected = None
@@ -106,10 +109,7 @@ class GameView(arcade.View):
             self.handle_interaction(self.actions.popleft(), self.selected)
 
     def handle_interaction(self, action, target):
-        """Replace this demo feedback with Member 2/3 public API calls later.
-
-        This is the single routing hook; the player never owns food/order state.
-        """
+        """Compose task 2 through its public methods; player owns no food state."""
         if target is None:
             self.message = "Move closer to a station marker."
         elif action == "remove" and target.kind != "plate":
@@ -122,7 +122,18 @@ class GameView(arcade.View):
             self.message = "Service hatch to the dining room. Orders will connect here later."
         else:
             self.interaction_count += 1
-            self.message = f"{action.upper()} -> {target.target_id} (display only)"
+            if action == "remove":
+                result = self.ingredients.remove_from_plate()
+                self.message = f"REMOVE: {result.message}"
+            elif target.kind == "box":
+                result = self.ingredients.collect(target.ingredient_id)
+                self.message = result.message
+            elif target.kind == "plate":
+                result = self.ingredients.add_to_plate()
+                self.message = f"Plate: {result.message}"
+            elif target.kind == "bin":
+                result = self.ingredients.discard()
+                self.message = result.message
 
     def text(self, key, value, x, y, size=14, color=INK, **kwargs):
         # Rasterize type at its displayed size, instead of shrinking cached
@@ -161,7 +172,8 @@ class GameView(arcade.View):
             if selected:
                 self.text("prompt_" + target.target_id, "E", target.x, target.y - 62,
                           14, (34, 72, 60), anchor_x="center")
-        self.kitchen.draw_props(self.player, self.players)
+        state = self.ingredients.snapshot()
+        self.kitchen.draw_props(self.player, self.players, state)
         self.text("pass_label", "SERVICE  /  DINING ROOM", 744, 672, 9,
                   (244, 224, 172), anchor_x="center")
         self.text("pantry_label", "PANTRY", 235, 43, 9, (73, 49, 38), anchor_x="center")
@@ -178,15 +190,15 @@ class GameView(arcade.View):
         self.text("eyebrow", "KITCHEN / PLAYER DEMO", x, top - 35, 11, ACCENT)
         self.text("title", "Classic Chef", x, top - 76, 24)
         self.text("subtitle", "The restaurant kitchen", x, top - 105, 15, MUTED)
-        self.text("controls", "WASD / arrows    Move\nE    Station preview\nQ    Plate preview\nP    Pause / resume\nR    Reset\nF1   Solid boundaries\nEsc  Close",
+        self.text("controls", "WASD / arrows    Move\nE    Use station\nQ    Remove from plate\nP    Pause / resume\nR    Reset\nF1   Solid boundaries\nEsc  Close",
                   x, top - 150, 14, INK, multiline=True, width=225, anchor_y="top")
-        self.text("status", f"State: {self.player.state}\nFacing: {self.player.direction}\nStation previews: {self.interaction_count}",
+        self.text("status", f"State: {self.player.state}\nHand: {state.held or 'empty'}\nPlate: {len(state.plate.ingredients)}/4",
                   x, top - 320, 13, ACCENT, multiline=True, width=225, anchor_y="top")
         nearby = TARGET_LABELS[self.selected.target_id] if self.selected else "Explore the room"
         self.text("nearby", nearby, x, top - 412, 18, INK)
         self.text("message", fill(self.message, width=26), x, top - 446, 13, INK,
                   multiline=True, width=220, anchor_y="top")
-        self.text("future", "Props are display only.\nCutting connects here later.\n\nDrag the window edges to resize.",
+        self.text("future", "Pickup and plating work.\nCooking/orders connect next.\n\nDrag the window edges to resize.",
                   x, 110, 11, MUTED, multiline=True, width=220, anchor_y="top")
         if self.paused:
             arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,

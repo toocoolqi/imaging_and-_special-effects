@@ -1,20 +1,21 @@
-# Restaurant game — shared team starter
+# Restaurant game â€” shared team starter
 
 One shared Python Arcade project for all three members. The Classic Chef player
-system is working now. Ingredients/plates and customer/orders have reserved
-folders and shared data definitions, ready for the other members to implement.
+and task2 ingredient/plate systems now work together. The current division of
+work, including both kitchens and the next food/order milestone, is in
+[TEAM_PLAN.md](docs/TEAM_PLAN.md).
 
 The tiled kitchen uses one consistent low top-down view across the entire room,
 with supplied prop images, a service hatch into the dining room and a chopping-board
 table. The chef is enlarged to suit the furniture. Its compact 960 x 704 world and
 256-pixel sidebar fit inside a comfortable, resizable window that accounts for
-Windows display scaling and the taskbar. Food/cutting stay preview-only.
+Windows display scaling and the taskbar. Task2 pickup, plating, removal and discarding now work.
 See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.4.0.zip** from the
-[polished restaurant demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.4.0).
+Download **kitchen-demo-windows-v0.5.0.zip** from the
+[polished restaurant demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.5.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -58,31 +59,24 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | Esc | Exit |
 | Drag window edges / maximize | Resize while keeping the whole room visible |
 
-No hold-item animations are included. The current stations report interactions;
-they do not collect food, assemble plates, serve orders or award points yet.
+No hold-item animations are included. Crates, plate and bin now use the task2 IngredientSystem.
+Cooking, reusable plate transport, sidebar orders and sound are assigned next.
 The chopping table's E preview is reserved for the future cutting system.
 
-## Each member's starting point
+## Current member assignments
 
-| Member | Main files to work in | Read first |
+Read [TEAM_PLAN.md](docs/TEAM_PLAN.md), then your guide:
+
+| Role | Current responsibility | Guide |
 | --- | --- | --- |
-| 1 — Player/integration | `restaurant/player/`, `restaurant/game_view.py` | [Player guide](docs/member_1_player.md), [working interface](docs/player_integration.md) |
-| 2 — Ingredient + plate | `restaurant/ingredients/`, `assets/ingredients/` | [Member 2 guide](docs/member_2_ingredients_plate.md) |
-| 3 — Customer / order | `restaurant/orders/`, `assets/orders/` | [Member 3 guide](docs/member_3_customer_orders.md) |
+| Member 1 | Player, maps, integration and packaging | [Player/integration](docs/team/01_player_integration.md) |
+| Member 2 / task2 | Food, plates, pots, sidebar orders, serving and sound | [Food/orders](docs/team/02_food_cooking_orders.md) |
+| Member 3 | Both kitchens and their overgrown/damaged variants | [Environments](docs/team/03_kitchen_environments.md) |
 
-All members use `restaurant/shared/contracts.py` and `settings.py`. The immutable
-records are already defined there. Coordinate shared changes before editing;
-never create a second copy of another member's state or contracts.
-
-Room furniture, solids and station approach points live together in
-`restaurant/kitchen/layout.py`; artwork rendering lives in `scene.py`. The
-new `chop` target kind adds a cutting-system hook without changing food IDs.
-
-Member 2 starts with `models.py` and `system.py`, then adds `renderer.py`,
-`demos/ingredients_demo.py`, and `tests/test_ingredients.py`.
-Member 3 starts with `models.py` and `system.py`, then adds `sidebar.py`,
-`demos/orders_demo.py`, and `tests/test_orders.py`.
-Their package folders currently contain guidance only, not pretend implementations.
+The old member guides describe the previous split and are historical. The
+IngredientSystem from task2 now works in the kitchen; run its independent lab
+with `python -m demos.ingredients_demo`. Cooking, order processing, physical
+plate transport and audio are the next assignment, not completed features.
 
 ## Run the checks
 

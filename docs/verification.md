@@ -1,3 +1,27 @@
+# Combined team baseline — v0.5.0, 3 November 2026
+
+111 source tests passed on Windows with Arcade 3.3.3. Task2 history and code are
+merged with the kitchen branch. Matching task2 crates, food, plate and empty pot
+are loaded directly into the main scene, and public IngredientSystem methods
+handle pickup, add/remove, discard and reset. Current IDs match the artwork.
+
+The extracted Windows ZIP passed 38 application checks, including collecting a
+tomato and displaying it on the real kitchen plate. Python/source paths were
+removed from its environment. Independent ingredient-demo tests also pass.
+
+Default window: 1040 x 602 logical/physical pixels at 100% scaling on a 2560 x
+1440 work area. The complete native window fits; resize rendering and collision
+outlines were inspected. This is local Windows verification.
+
+![Task2 food in the kitchen](images/task2_integration.png)
+
+Read TEAM_PLAN.md for the current three member assignments. Kitchen variants,
+physical plate transport, cooking, orders and sound are assigned future work.
+The shared baseline is distributed to main, task2 and feature/kitchen-background
+using normal fast-forward updates after preserving both histories in a merge.
+
+---
+
 # Delivery verification
 
 ## Restaurant design and closer collisions — v0.4.0, 21 October 2026

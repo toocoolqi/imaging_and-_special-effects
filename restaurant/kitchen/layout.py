@@ -84,18 +84,18 @@ WALL_RECTANGLES = ROOM_SOLIDS + tuple(prop.collision_rectangle for prop in SOLID
 # Targets describe the chef CENTER when standing at a station. A selected
 # foot ring is drawn 32 pixels below that center. IDs stay stable for teammates.
 TARGETS = (
-    InteractionTarget("box_lettuce", "box", 100, 174, "lettuce"),
+    InteractionTarget("box_sandwich", "box", 100, 174, "sandwich"),
     InteractionTarget("box_tomato", "box", 190, 174, "tomato"),
-    InteractionTarget("box_bread", "box", 280, 174, "bread"),
-    InteractionTarget("box_cheese", "box", 370, 174, "cheese"),
+    InteractionTarget("box_noodles", "box", 280, 174, "noodles"),
+    InteractionTarget("box_milk", "box", 370, 174, "milk"),
     InteractionTarget("plate", "plate", 620, 302),
     InteractionTarget("chopping_board", "chop", 300, 302),
     InteractionTarget("bin", "bin", 886, 174),
     InteractionTarget("serve", "serve", 744, 472),
 )
 TARGET_LABELS = {
-    "box_lettuce": "Pantry", "box_tomato": "Pantry",
-    "box_bread": "Pantry", "box_cheese": "Pantry",
+    "box_sandwich": "Pantry", "box_tomato": "Pantry",
+    "box_noodles": "Pantry", "box_milk": "Pantry",
     "plate": "Plate station", "chopping_board": "Chopping board",
     "bin": "Bin", "serve": "Service hatch",
 }

@@ -9,8 +9,8 @@ system should move the chef or read the controller's private variables.
 
 The earlier team guides describe the eventual full game. The shared foundation
 now includes all agreed snapshot/result records in `restaurant/shared/contracts.py`.
-Their ingredient and order systems remain for Members 2 and 3 to implement;
-there are no fake ingredient/order implementations here.
+Task2 ingredients/plates are now implemented and composed by GameView.
+See TEAM_PLAN.md for the current role split and next cooking/order milestone.
 
 ## Public interface
 
@@ -29,8 +29,8 @@ there are no fake ingredient/order implementations here.
 | `choose_target(position, targets, radius=64.0)` | Return nearest target or `None` |
 
 `InteractionTarget(target_id, kind, x, y, ingredient_id=None)` is immutable.
-Kinds are `box`, `plate`, `bin`, `serve`, and `chop`. Box ingredient IDs are `lettuce`,
-`tomato`, `bread`, and `cheese`. Other target kinds must leave ingredient_id empty.
+Kinds are `box`, `plate`, `bin`, `serve`, and `chop`. Box ingredient IDs are `sandwich`,
+`tomato`, `noodles`, and `milk`. Other target kinds must leave ingredient_id empty.
 Target IDs must be unique. Range includes exactly 64 pixels, uses Euclidean
 distance, and resolves ties alphabetically by ID. Facing is not required.
 

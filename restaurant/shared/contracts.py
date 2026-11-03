@@ -4,7 +4,7 @@ from math import isfinite
 from typing import Literal
 
 Direction = Literal["up", "down", "left", "right"]
-IngredientId = Literal["lettuce", "tomato", "bread", "cheese"]
+IngredientId = Literal["sandwich", "tomato", "noodles", "milk"]
 TargetKind = Literal["box", "plate", "bin", "serve", "chop"]
 
 
@@ -23,7 +23,7 @@ class InteractionTarget:
         if not isfinite(self.x) or not isfinite(self.y):
             raise ValueError("Target coordinates must be finite.")
         if self.kind == "box":
-            if self.ingredient_id not in ("lettuce", "tomato", "bread", "cheese"):
+            if self.ingredient_id not in ("sandwich", "tomato", "noodles", "milk"):
                 raise ValueError("A box must identify its ingredient.")
         elif self.ingredient_id is not None:
             raise ValueError("Only box targets have an ingredient ID.")
@@ -32,7 +32,7 @@ class InteractionTarget:
 def _validate_ingredients(values):
     if not isinstance(values, tuple):
         raise ValueError("Ingredient collections must be immutable tuples.")
-    if any(value not in ("lettuce", "tomato", "bread", "cheese") for value in values):
+    if any(value not in ("sandwich", "tomato", "noodles", "milk") for value in values):
         raise ValueError("Unknown ingredient ID.")
 
 

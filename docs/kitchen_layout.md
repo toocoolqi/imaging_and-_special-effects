@@ -12,9 +12,7 @@ The service hatch is a visible pass for food; the chef cannot walk through it.
 
 ![Kitchen preview](images/kitchen_preview.png)
 
-These are display props. E previews stations; food collection, chopping,
-cooking and order completion still belong to the other systems. No hold-item
-animations are included.
+Crates, the plate and bin use task2 food state in the shared game: E collects/adds/discards and Q removes from the plate. Service/chopping remain previews. Cooking and physical plate transport are assigned in [TEAM_PLAN.md](TEAM_PLAN.md). No hold-item animations are included.
 
 ## Collisions and drawing order
 
@@ -62,10 +60,7 @@ These stable IDs reach `GameView.handle_interaction(action, target)`. Connect
 future system methods there. Keep food state out of `PlayerController`.
 No cutting timer, inventory or order logic is created by this demo.
 
-Box IDs/IngredientId contracts stay unchanged. The supplied crates depict
-sandwich, tomato, noodles and milk; agreed game IDs remain lettuce, tomato,
-bread and cheese. Agree final recipes/art with the group before implementing
-collection; these pictures do not supply working ingredients today.
+Food IDs now match task2: sandwich, tomato, noodles, milk. Box targets are box_sandwich, box_tomato, box_noodles, box_milk. The kitchen loads their prepared sprites directly from assets/ingredients/sprites, including plate and pot_empty. Other kitchen architecture keeps its existing artwork.
 
 ## Window, checks and packaging
 

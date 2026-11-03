@@ -1,1 +1,5 @@
-"""Member 2's ingredient/plate package. Implementation belongs to Member 2."""
+"""Member 2's ingredient and plate system."""
+
+from restaurant.ingredients.system import IngredientSystem
+
+__all__ = ["IngredientSystem"]

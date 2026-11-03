@@ -48,7 +48,7 @@ def test_one_action_per_press_and_plate_hook(view):
         view.on_key_press(arcade.key.E, 0)
     view.on_update(1 / 60)
     assert view.interaction_count == 1
-    assert "plate" in view.message
+    assert "plate" in view.message.lower()
     view.on_update(1 / 60)
     assert view.interaction_count == 1
     view.on_key_release(arcade.key.E, 0)
@@ -90,7 +90,7 @@ def test_out_of_range_and_wrong_q_target(view):
     view.on_key_press(arcade.key.Q, 0)
     view.on_update(0.01)
     assert view.interaction_count == 0
-    assert "plate" in view.message
+    assert "plate" in view.message.lower()
 
 
 def test_real_render_all_directions_debug_and_pause(view):

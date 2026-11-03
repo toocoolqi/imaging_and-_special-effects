@@ -7,6 +7,12 @@ from restaurant.kitchen.details import room_details
 from restaurant.kitchen.layout import PROPS, SOLID_PROPS, WALL_ART
 
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "kitchen"
+FOOD_DIR = ASSET_DIR.parent / "ingredients" / "sprites"
+TASK2_ASSETS = {
+    "crate_sandwich": "box_sandwich", "crate_tomato": "box_tomato",
+    "crate_noodles": "box_noodles", "crate_milk": "box_milk",
+    "plate": "plate", "pot": "pot_empty",
+}
 
 # Top-left image pixels. Arcade extracts these six transparent sprite regions
 # at load time; the original atlas is preserved and no extra image tool is used.
@@ -22,8 +28,12 @@ ATLAS_REGIONS = {
 
 def load_textures():
     names = {prop.asset for prop in PROPS} | {item[0] for item in WALL_ART}
-    textures = {name: arcade.load_texture(ASSET_DIR / f"{name}.png")
+    textures = {name: arcade.load_texture(
+                    FOOD_DIR / f"{TASK2_ASSETS[name]}.png" if name in TASK2_ASSETS
+                    else ASSET_DIR / f"{name}.png")
                 for name in names - ATLAS_REGIONS.keys()}
+    textures.update({name: arcade.load_texture(FOOD_DIR / f"{name}.png")
+                     for name in ("sandwich", "tomato", "noodles", "milk")})
     atlas = arcade.load_texture(ASSET_DIR / "restaurant_details.png")
     textures.update({name: atlas.crop(*region) for name, region in ATLAS_REGIONS.items()})
     return textures
@@ -55,12 +65,27 @@ class KitchenScene:
         arcade.draw_texture_rect(self.textures[prop.asset],
                                  arcade.XYWH(*prop.rectangle), pixelated=False)
 
-    def draw_props(self, player, players):
+    def draw_props(self, player, players, state=None):
         for prop_id in self.draw_order(player.ground_position[1]):
             if prop_id == "player":
                 players.draw(pixelated=True)
+                if state is not None and state.held:
+                    texture = self.textures[state.held]
+                    size = 24
+                    scale = size / max(texture.width, texture.height)
+                    arcade.draw_texture_rect(texture,
+                        arcade.XYWH(player.position[0] + 31, player.position[1] + 5,
+                                    texture.width * scale, texture.height * scale), pixelated=False)
                 continue
             prop = self.props[prop_id]
             self.draw_prop(prop)
             for decoration in self.decorations[prop_id]:
                 self.draw_prop(decoration)
+                if decoration.prop_id == "display_plate" and state is not None:
+                    for index, ingredient in enumerate(state.plate.ingredients):
+                        texture = self.textures[ingredient]
+                        scale = 22 / max(texture.width, texture.height)
+                        arcade.draw_texture_rect(texture, arcade.XYWH(
+                            decoration.x - 13 + (index % 2) * 26,
+                            decoration.y + 7 - (index // 2) * 14,
+                            texture.width * scale, texture.height * scale), pixelated=False)

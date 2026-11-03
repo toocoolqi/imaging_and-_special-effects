@@ -80,7 +80,7 @@ def run_packaged_check(output: Path) -> int:
             view.on_key_press(arcade.key.E, 0)
             view.on_key_press(arcade.key.E, 0)
             view.on_update(0.01)
-            check(view.interaction_count == 1 and "plate" in view.message,
+            check(view.interaction_count == 1 and "plate" in view.message.lower(),
                   "Exactly one nearby interaction per key press")
             # Exercise each actual kitchen obstacle, not just a synthetic wall.
             for index, wall in enumerate(view.walls):
@@ -124,6 +124,21 @@ def run_packaged_check(output: Path) -> int:
             view.on_update(0.01)
             check(view.interaction_count == 1 and "Cutting" in view.message,
                   "Chopping board preview hook; food stays decorative")
+            # Verify task2 is usable in the combined room and bundled assets.
+            view.clear_input()
+            box = next(t for t in TARGETS if t.ingredient_id == "tomato")
+            view.player.reset((box.x, box.y))
+            view.on_key_press(arcade.key.E, 0)
+            view.on_update(0.01)
+            check(view.ingredients.snapshot().held == "tomato", "Task2 pickup in the shared kitchen")
+            view.clear_input()
+            view.player.reset((plate.x, plate.y))
+            view.on_key_press(arcade.key.E, 0)
+            view.on_update(0.01)
+            check(view.ingredients.snapshot().plate.ingredients == ("tomato",),
+                  "Task2 places collected food onto the shared kitchen plate")
+            view.on_draw()
+            arcade.get_image().save(output / "food-on-plate.png")
             preview_message = view.message
             serve = next(target for target in TARGETS if target.kind == "serve")
             view.reset()
