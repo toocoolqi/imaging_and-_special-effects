@@ -1,4 +1,4 @@
-# Restaurant game â€” shared team starter
+# Restaurant game — shared team starter
 
 One shared Python Arcade project for all three members. The Classic Chef player
 and task2 ingredient/plate systems now work together. The current division of
@@ -51,8 +51,8 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | Key | Action |
 | --- | --- |
 | WASD / arrows | Move, with equal straight and diagonal speed |
-| E | Interact once with the nearest station within 64 pixels |
-| Q | Plate-removal intent (feedback only for now) |
+| E | Use the nearest station once within 64 pixels |
+| Q | Remove the newest plated food into empty hands |
 | P | Pause/resume |
 | R | Reset |
 | F1 | Show collision and interaction guides |
