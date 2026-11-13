@@ -1,18 +1,22 @@
-"""Player-only demonstration and the future composition point for teammates."""
+"""Run the shared kitchen game and route actions between its systems."""
 from collections import deque
+from math import ceil
 from textwrap import fill
 
 import arcade
 
+from restaurant.audio import GameAudio
 from restaurant.display import fit_window, scene_viewport
+from restaurant.kitchen.days import DAYS
 from restaurant.kitchen.layout import TARGET_LABELS
 from restaurant.kitchen.scene import KitchenScene
 from restaurant.ingredients import IngredientSystem
+from restaurant.ingredients.cooking import CookingPot
+from restaurant.orders.system import DAY_GOAL, GOLD_PER_ORDER, OrderSystem
 from restaurant.player.controller import PlayerController
 from restaurant.player.interaction import choose_target
 from restaurant.shared.settings import (
-    KITCHEN_HEIGHT, KITCHEN_WIDTH, SIDEBAR_BOUNDS, SPAWN, TARGETS,
-    WALL_RECTANGLES, WINDOW_HEIGHT, WINDOW_WIDTH,
+    KITCHEN_HEIGHT, KITCHEN_WIDTH, SIDEBAR_BOUNDS, SPAWN, WINDOW_HEIGHT, WINDOW_WIDTH,
 )
 
 MOVE_KEYS = {
@@ -27,7 +31,7 @@ ACCENT = (111, 221, 178)
 
 
 class GameView(arcade.View):
-    def __init__(self):
+    def __init__(self, *, audio_enabled=True):
         super().__init__()
         # The full room and sidebar stay visible in a resizable, DPI-aware window.
         self.camera = arcade.Camera2D(
@@ -37,12 +41,14 @@ class GameView(arcade.View):
         self.player = PlayerController(SPAWN)
         self.players = arcade.SpriteList()
         self.players.append(self.player.sprite)
-        self.kitchen = KitchenScene()
         self.ingredients = IngredientSystem()
-        self.walls = arcade.SpriteList(use_spatial_hash=True)
-        for x, y, width, height in WALL_RECTANGLES:
-            self.walls.append(arcade.SpriteSolidColor(width, height, x, y))
-        self.targets = TARGETS
+        self.pot = CookingPot()
+        self.orders = OrderSystem()
+        self.audio = GameAudio(audio_enabled)
+        self.day_index = 0
+        self.total_gold = 0
+        self.finished = False
+        self.serve_flash = 0.0
         self.pressed: set[int] = set()
         self.actions = deque()
         self.paused = False
@@ -52,6 +58,43 @@ class GameView(arcade.View):
         self.interaction_count = 0
         self._text_cache = {}
         self._text_view_size = None
+        self.load_day()
+
+    @property
+    def day_complete(self):
+        return self.orders.gold >= DAY_GOAL
+
+    def load_day(self):
+        self.clear_input()
+        self.audio.set_bubbling(False)
+        self.day = DAYS[self.day_index]
+        self.kitchen = KitchenScene(self.day)
+        self.targets = self.day.targets
+        self.walls = arcade.SpriteList(use_spatial_hash=True)
+        for x, y, width, height in self.day.walls:
+            self.walls.append(arcade.SpriteSolidColor(width, height, x, y))
+        self.player.reset(self.day.spawn)
+        self.ingredients.reset()
+        self.pot.reset()
+        self.orders.reset()
+        self.serve_flash = 0.0
+        self.selected = None
+        self.message = "Accept the first order at the service hatch."
+
+    def advance_day(self):
+        if self.paused or self.finished or not self.day_complete:
+            return
+        if self.ingredients.snapshot().carrying_plate:
+            self.message = "Return the empty plate before closing the kitchen."
+            return
+        if self.day_index == len(DAYS) - 1:
+            self.finished = True
+            self.clear_input()
+            self.audio.set_bubbling(False)
+        else:
+            self.day_index += 1
+            self.load_day()
+        self.audio.play("advance")
 
     def clear_input(self):
         self.pressed.clear()
@@ -60,6 +103,7 @@ class GameView(arcade.View):
 
     def on_hide_view(self):
         self.clear_input()
+        self.audio.set_bubbling(False)
 
     def on_key_press(self, symbol, modifiers):
         if symbol in self.pressed:
@@ -71,13 +115,19 @@ class GameView(arcade.View):
             self.paused = not self.paused
             self.clear_input()
             self.pressed.add(symbol)
-            self.message = "Paused" if self.paused else "Resumed. Press movement keys again."
+            self.audio.set_bubbling(not self.paused and self.pot.state == "cooking")
+            self.message = "Paused" if self.paused else "Resumed."
+        elif symbol == arcade.key.M:
+            self.audio.toggle()
+        elif symbol == arcade.key.ENTER:
+            self.advance_day()
+            self.pressed.add(symbol)
         elif symbol == arcade.key.R:
             self.reset()
             self.pressed.add(symbol)
         elif symbol == arcade.key.F1:
             self.debug = not self.debug
-        elif not self.paused:
+        elif not self.paused and not self.finished:
             if symbol in MOVE_KEYS:
                 self.player.set_move_key(MOVE_KEYS[symbol], True)
             elif symbol in (arcade.key.E, arcade.key.Q):
@@ -92,17 +142,23 @@ class GameView(arcade.View):
             self.player.set_move_key(direction, still_held)
 
     def reset(self):
-        self.clear_input()
-        self.ingredients.reset()
-        self.player.reset(SPAWN)
-        self.paused = False
-        self.selected = None
+        self.day_index = 0
+        self.total_gold = 0
+        self.finished = self.paused = False
         self.interaction_count = 0
-        self.message = "Player demo reset."
+        self.load_day()
 
     def on_update(self, delta_time):
-        if self.paused:
+        if self.paused or self.finished:
             return
+        self.serve_flash = max(0, self.serve_flash - delta_time)
+        if self.orders.update(delta_time):
+            self.message = "Order expired. Accept the replacement at the hatch."
+            self.audio.play("reject")
+        if self.pot.update(delta_time):
+            self.message = "Creamy noodles are ready."
+            self.audio.play("ready")
+        self.audio.set_bubbling(self.pot.state == "cooking")
         self.player.update(delta_time, self.walls)
         self.selected = choose_target(self.player.position, self.targets)
         while self.actions:
@@ -117,9 +173,9 @@ class GameView(arcade.View):
         elif target.kind == "chop":
             self.interaction_count += 1
             self.message = "Chopping board ready. Cutting will be connected here later."
-        elif target.kind == "serve" and action == "interact":
+        elif target.kind == "serve":
             self.interaction_count += 1
-            self.message = "Service hatch to the dining room. Orders will connect here later."
+            self.use_hatch()
         else:
             self.interaction_count += 1
             if action == "remove":
@@ -129,11 +185,36 @@ class GameView(arcade.View):
                 result = self.ingredients.collect(target.ingredient_id)
                 self.message = result.message
             elif target.kind == "plate":
-                result = self.ingredients.add_to_plate()
+                result = self.ingredients.use_plate()
                 self.message = f"Plate: {result.message}"
             elif target.kind == "bin":
                 result = self.ingredients.discard()
                 self.message = result.message
+            elif target.kind == "pot":
+                result = self.pot.use(self.ingredients)
+                self.message = result.message
+            self.audio.play(("pickup" if target.kind == "box" else "place")
+                            if result.success else "reject")
+
+    def use_hatch(self):
+        state = self.ingredients.snapshot()
+        if self.day_complete:
+            self.message = "Return the plate to the island, then press Enter."
+            return
+        if state.carrying_plate:
+            result = self.orders.try_serve(state.plate, self.ingredients.clear_plate)
+            self.message = result.message
+            if result.success:
+                self.total_gold += GOLD_PER_ORDER
+                self.serve_flash = 1.1
+            self.audio.play("serve" if result.success else "reject")
+        elif state.held is None:
+            result = self.orders.accept_next()
+            self.message = result.message
+            self.audio.play("accept" if result.success else "reject")
+        else:
+            self.message = "Put the ingredient on the plate before serving."
+            self.audio.play("reject")
 
     def text(self, key, value, x, y, size=14, color=INK, **kwargs):
         # Rasterize type at its displayed size, instead of shrinking cached
@@ -146,6 +227,8 @@ class GameView(arcade.View):
         if key not in self._text_cache:
             self._text_cache[key] = arcade.Text(value, x, y, color, size * scale, **kwargs)
         label = self._text_cache[key]
+        if label.color != color:
+            label.color = color
         if label.text != value:
             label.text = value
         with self.ui_camera.activate():
@@ -173,12 +256,15 @@ class GameView(arcade.View):
                 self.text("prompt_" + target.target_id, "E", target.x, target.y - 62,
                           14, (34, 72, 60), anchor_x="center")
         state = self.ingredients.snapshot()
-        self.kitchen.draw_props(self.player, self.players, state)
+        self.kitchen.draw_props(self.player, self.players, state, self.pot)
+        if self.serve_flash:
+            arcade.draw_circle_outline(744, 547, 12 + (1.1 - self.serve_flash) * 48,
+                                       (249, 207, 98, int(240 * self.serve_flash / 1.1)), 3)
         self.text("pass_label", "SERVICE  /  DINING ROOM", 744, 672, 9,
                   (244, 224, 172), anchor_x="center")
         self.text("pantry_label", "PANTRY", 235, 43, 9, (73, 49, 38), anchor_x="center")
         if self.debug:
-            for x, y, width, height in WALL_RECTANGLES:
+            for x, y, width, height in self.day.walls:
                 arcade.draw_rect_outline(arcade.XYWH(x, y, width, height),
                                          (249, 96, 87), 2)
             self.players.draw_hit_boxes(color=(237, 80, 80), line_thickness=2)
@@ -187,20 +273,42 @@ class GameView(arcade.View):
         arcade.draw_lbwh_rectangle_filled(*SIDEBAR_BOUNDS, (24, 37, 44))
         x = KITCHEN_WIDTH + 18
         top = WINDOW_HEIGHT
-        self.text("eyebrow", "KITCHEN / PLAYER DEMO", x, top - 35, 11, ACCENT)
+        self.text("eyebrow", f"DAY {self.day_index + 1} / {len(DAYS)}", x, top - 35, 11, ACCENT)
         self.text("title", "Classic Chef", x, top - 76, 24)
-        self.text("subtitle", "The restaurant kitchen", x, top - 105, 15, MUTED)
-        self.text("controls", "WASD / arrows    Move\nE    Use station\nQ    Remove from plate\nP    Pause / resume\nR    Reset\nF1   Solid boundaries\nEsc  Close",
-                  x, top - 150, 14, INK, multiline=True, width=225, anchor_y="top")
-        self.text("status", f"State: {self.player.state}\nHand: {state.held or 'empty'}\nPlate: {len(state.plate.ingredients)}/4",
-                  x, top - 320, 13, ACCENT, multiline=True, width=225, anchor_y="top")
+        self.text("subtitle", self.day.name, x, top - 105, 14, MUTED)
+        ticket = self.orders.snapshot()
+        phase = f"{ceil(ticket.remaining_seconds)} s left" if self.orders.active else "Accept at the hatch"
+        if self.day_complete:
+            phase = "Return the plate and press Enter"
+        self.text("order", f"{ticket.recipe_name}\n{phase}", x, top - 143, 15, INK,
+                  multiline=True, width=225, anchor_y="top")
+        for index, food in enumerate(ticket.required if not self.day_complete else ()):
+            texture = self.kitchen.textures[food]
+            scale = 33 / max(texture.width, texture.height)
+            arcade.draw_texture_rect(texture, arcade.XYWH(x + 17 + 42 * index,
+                top - 221, texture.width * scale, texture.height * scale), pixelated=False)
+        self.text("gold", f"Gold {self.orders.gold} / {DAY_GOAL}   |   Total {self.total_gold}",
+                  x, top - 270, 13, (249, 207, 98))
+        hand = "plate" if state.carrying_plate else (state.held or "empty").replace("_", " ")
+        self.text("status", f"Hand: {hand}\nPlate: {len(state.plate.ingredients)}/4\n"
+                  f"Pot: {self.pot.state}  |  Served: {self.orders.completed}",
+                  x, top - 314, 13, ACCENT, multiline=True, width=225, anchor_y="top")
         nearby = TARGET_LABELS[self.selected.target_id] if self.selected else "Explore the room"
         self.text("nearby", nearby, x, top - 412, 18, INK)
         self.text("message", fill(self.message, width=26), x, top - 446, 13, INK,
                   multiline=True, width=220, anchor_y="top")
-        self.text("future", "Pickup and plating work.\nCooking/orders connect next.\n\nDrag the window edges to resize.",
-                  x, 110, 11, MUTED, multiline=True, width=220, anchor_y="top")
-        if self.paused:
+        sound = "off" if self.audio.muted else "on"
+        self.text("controls", f"WASD / arrows   Move\nE   Use station   Q   Remove food\n"
+                  f"P   Pause   R   Restart   M   Sound {sound}\nF1   Collisions   Esc   Close",
+                  x, 119, 11, MUTED, multiline=True, width=224, anchor_y="top")
+        if self.finished:
+            arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,
+                                              (20, 30, 40, 220))
+            self.text("ending", "Restaurant Complete", KITCHEN_WIDTH / 2,
+                      KITCHEN_HEIGHT / 2 + 24, 30, anchor_x="center")
+            self.text("ending_hint", f"{self.total_gold} gold earned   |   R to play again",
+                      KITCHEN_WIDTH / 2, KITCHEN_HEIGHT / 2 - 20, 16, anchor_x="center")
+        elif self.paused:
             arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,
                                               (20, 30, 40, 170))
             self.text("paused", "PAUSED  /  P TO RESUME", KITCHEN_WIDTH / 2,
@@ -221,7 +329,7 @@ def create_window(*, visible=True):
                         visible=False, resizable=True,
                         antialiasing=False, update_rate=1 / 60)
     fit_window(window)
-    window.show_view(GameView())
+    window.show_view(GameView(audio_enabled=visible))
     if visible:
         window.set_visible(True)
     return window

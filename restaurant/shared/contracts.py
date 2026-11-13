@@ -5,7 +5,8 @@ from typing import Literal
 
 Direction = Literal["up", "down", "left", "right"]
 IngredientId = Literal["sandwich", "tomato", "noodles", "milk"]
-TargetKind = Literal["box", "plate", "bin", "serve", "chop"]
+FoodId = Literal["sandwich", "tomato", "noodles", "milk", "creamy_noodles"]
+TargetKind = Literal["box", "plate", "bin", "serve", "chop", "pot"]
 
 
 @dataclass(frozen=True)
@@ -18,7 +19,7 @@ class InteractionTarget:
     ingredient_id: IngredientId | None = None
 
     def __post_init__(self):
-        if not self.target_id or self.kind not in ("box", "plate", "bin", "serve", "chop"):
+        if not self.target_id or self.kind not in ("box", "plate", "bin", "serve", "chop", "pot"):
             raise ValueError("Target needs a nonempty ID and a valid kind.")
         if not isfinite(self.x) or not isfinite(self.y):
             raise ValueError("Target coordinates must be finite.")
@@ -32,7 +33,7 @@ class InteractionTarget:
 def _validate_ingredients(values):
     if not isinstance(values, tuple):
         raise ValueError("Ingredient collections must be immutable tuples.")
-    if any(value not in ("sandwich", "tomato", "noodles", "milk") for value in values):
+    if any(value not in ("sandwich", "tomato", "noodles", "milk", "creamy_noodles") for value in values):
         raise ValueError("Unknown ingredient ID.")
 
 
@@ -43,7 +44,7 @@ def _nonnegative_integer(value, name):
 
 @dataclass(frozen=True)
 class PlateSnapshot:
-    ingredients: tuple[IngredientId, ...]
+    ingredients: tuple[FoodId, ...]
     revision: int
 
     def __post_init__(self):
@@ -53,8 +54,9 @@ class PlateSnapshot:
 
 @dataclass(frozen=True)
 class IngredientSnapshot:
-    held: IngredientId | None
+    held: FoodId | None
     plate: PlateSnapshot
+    carrying_plate: bool = False
 
     def __post_init__(self):
         if self.held is not None:
@@ -73,7 +75,7 @@ class ActionResult:
 class OrderSnapshot:
     order_id: int
     recipe_name: str
-    required: tuple[IngredientId, ...]
+    required: tuple[FoodId, ...]
     remaining_seconds: float
 
     def __post_init__(self):

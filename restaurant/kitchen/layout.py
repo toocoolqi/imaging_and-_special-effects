@@ -91,12 +91,14 @@ TARGETS = (
     InteractionTarget("plate", "plate", 620, 302),
     InteractionTarget("chopping_board", "chop", 300, 302),
     InteractionTarget("bin", "bin", 886, 174),
+    InteractionTarget("pot", "pot", 332, 448),
     InteractionTarget("serve", "serve", 744, 472),
 )
 TARGET_LABELS = {
     "box_sandwich": "Pantry", "box_tomato": "Pantry",
     "box_noodles": "Pantry", "box_milk": "Pantry",
     "plate": "Plate station", "chopping_board": "Chopping board",
+    "pot": "Cooking pot",
     "bin": "Bin", "serve": "Service hatch",
 }
 ANIMATION_TEST_POSITION = (480, 420)

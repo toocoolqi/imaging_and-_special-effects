@@ -145,7 +145,7 @@ def run_packaged_check(output: Path) -> int:
             view.player.reset((serve.x, serve.y))
             view.on_key_press(arcade.key.E, 0)
             view.on_update(0.01)
-            check(view.selected == serve and "dining room" in view.message,
+            check(view.selected == serve and view.orders.active,
                   "Serving hook reaches the visible dining-room hatch")
             view.clear_input()
             view.player.reset((chop.x, chop.y))

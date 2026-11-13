@@ -1,3 +1,5 @@
+> The assignment build adds four playable days, orders, cooking and sound. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md). The handoff notes below describe the prior v0.5 baseline.
+
 # Restaurant game — shared team starter
 
 One shared Python Arcade project for all three members. The Classic Chef player
