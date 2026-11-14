@@ -89,14 +89,16 @@ TARGETS = (
     InteractionTarget("box_noodles", "box", 280, 174, "noodles"),
     InteractionTarget("box_milk", "box", 370, 174, "milk"),
     InteractionTarget("plate", "plate", 620, 302),
+    InteractionTarget("plate_back", "plate", 620, 408),
     InteractionTarget("chopping_board", "chop", 300, 302),
     InteractionTarget("bin", "bin", 886, 174),
     InteractionTarget("serve", "serve", 744, 472),
+    InteractionTarget("pot", "pot", 332, 452),
 )
 TARGET_LABELS = {
     "box_sandwich": "Pantry", "box_tomato": "Pantry",
     "box_noodles": "Pantry", "box_milk": "Pantry",
-    "plate": "Plate station", "chopping_board": "Chopping board",
-    "bin": "Bin", "serve": "Service hatch",
+    "plate": "Plate station", "plate_back": "Plate station", "chopping_board": "Chopping board",
+    "bin": "Bin", "serve": "Service hatch", "pot": "Stove",
 }
 ANIMATION_TEST_POSITION = (480, 420)

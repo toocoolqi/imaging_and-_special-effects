@@ -201,6 +201,7 @@ def test_service_hatch_uses_existing_serve_hook():
         view.on_update(1 / 60)
         assert view.selected == target
         assert view.interaction_count == 1
-        assert "dining room" in view.message
+        assert "Service open" in view.message
+        assert len(view.orders.snapshot()) == 1
     finally:
         window.close()

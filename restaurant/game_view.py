@@ -1,15 +1,19 @@
-"""Player-only demonstration and the future composition point for teammates."""
+"""Compose the player, kitchen, food, service orders, and sound."""
 from collections import deque
-from textwrap import fill
 
 import arcade
 
+from restaurant.audio import KitchenAudio
 from restaurant.display import fit_window, scene_viewport
-from restaurant.kitchen.layout import TARGET_LABELS
-from restaurant.kitchen.scene import KitchenScene
+from restaurant.kitchen.layout import PROPS
+from restaurant.kitchen.scene import KitchenScene, draw_icon
 from restaurant.ingredients import IngredientSystem
+from restaurant.ingredients.models import POT_RECIPE
+from restaurant.orders.sidebar import OrderSidebar
+from restaurant.orders.system import HAND_SERVICE_ITEMS, OrderSystem
 from restaurant.player.controller import PlayerController
 from restaurant.player.interaction import choose_target
+from restaurant.shared.contracts import ActionResult, PlateLocation, PotStage
 from restaurant.shared.settings import (
     KITCHEN_HEIGHT, KITCHEN_WIDTH, SIDEBAR_BOUNDS, SPAWN, TARGETS,
     WALL_RECTANGLES, WINDOW_HEIGHT, WINDOW_WIDTH,
@@ -24,6 +28,40 @@ MOVE_KEYS = {
 INK = (232, 238, 236)
 MUTED = (164, 182, 184)
 ACCENT = (111, 221, 178)
+CRATE_RECTS = {prop.asset.removeprefix("crate_"): prop.rectangle
+               for prop in PROPS if prop.asset.startswith("crate_")}
+PLATE_TABLE_RECT = next(prop.rectangle for prop in PROPS if prop.prop_id == "plate_counter")
+
+
+def station_hint(target, state, service_started):
+    """Describe the action before the player presses E."""
+    carrying = state.plate.location is PlateLocation.CARRIED
+    if target.kind == "box":
+        item = target.ingredient_id
+        return f"E · Add {item} to plate" if carrying else f"E · Pick up {item}"
+    if target.kind == "plate":
+        if carrying:
+            return "E · Return plate"
+        return "E · Add held food" if state.held else "E · Pick up plate"
+    if target.kind == "pot":
+        if state.pot.stage is PotStage.COOKING:
+            return "Pot is cooking"
+        if state.pot.stage is PotStage.READY:
+            if not carrying or state.plate.ingredients:
+                return "Bring an empty plate for pasta"
+            return "E · Plate pasta"
+        return "E · Load pot from plate" if carrying else "E · Add held ingredient"
+    if target.kind == "serve":
+        if not service_started:
+            return "E · Start service"
+        if carrying:
+            return "E · Serve plate"
+        if state.held in HAND_SERVICE_ITEMS:
+            return f"E · Serve {state.held}"
+        return "Bring a plate, sandwich, or milk"
+    if target.kind == "bin":
+        return "E · Discard held food" if state.held else "E · Clear plate"
+    return "Chopping board · decoration"
 
 
 class GameView(arcade.View):
@@ -39,6 +77,11 @@ class GameView(arcade.View):
         self.players.append(self.player.sprite)
         self.kitchen = KitchenScene()
         self.ingredients = IngredientSystem()
+        self.orders = OrderSystem()
+        self.sidebar = OrderSidebar(SIDEBAR_BOUNDS)
+        self.audio = KitchenAudio()
+        self.outgoing = ()
+        self.outgoing_seconds = 0.0
         self.walls = arcade.SpriteList(use_spatial_hash=True)
         for x, y, width, height in WALL_RECTANGLES:
             self.walls.append(arcade.SpriteSolidColor(width, height, x, y))
@@ -48,7 +91,7 @@ class GameView(arcade.View):
         self.paused = False
         self.debug = False
         self.selected = None
-        self.message = "Prep at the island, plate up, then use the service hatch."
+        self.message = "Use E at the service table to start orders."
         self.interaction_count = 0
         self._text_cache = {}
         self._text_view_size = None
@@ -60,6 +103,7 @@ class GameView(arcade.View):
 
     def on_hide_view(self):
         self.clear_input()
+        self.audio.stop()
 
     def on_key_press(self, symbol, modifiers):
         if symbol in self.pressed:
@@ -72,6 +116,10 @@ class GameView(arcade.View):
             self.clear_input()
             self.pressed.add(symbol)
             self.message = "Paused" if self.paused else "Resumed. Press movement keys again."
+            self.sync_audio()
+        elif symbol == arcade.key.M:
+            self.audio.muted = not self.audio.muted
+            self.sync_audio()
         elif symbol == arcade.key.R:
             self.reset()
             self.pressed.add(symbol)
@@ -94,46 +142,87 @@ class GameView(arcade.View):
     def reset(self):
         self.clear_input()
         self.ingredients.reset()
+        self.orders.reset()
+        self.audio.stop()
+        self.outgoing = ()
+        self.outgoing_seconds = 0.0
         self.player.reset(SPAWN)
         self.paused = False
         self.selected = None
         self.interaction_count = 0
-        self.message = "Player demo reset."
+        self.message = "Kitchen reset. Start service at the hatch."
 
     def on_update(self, delta_time):
         if self.paused:
             return
         self.player.update(delta_time, self.walls)
+        self.ingredients.update(delta_time)
+        expired = self.orders.stats().expired
+        self.orders.update(delta_time)
+        if self.orders.stats().expired > expired:
+            self.message = "An order expired."
+        self.outgoing_seconds = max(0.0, self.outgoing_seconds - delta_time)
         self.selected = choose_target(self.player.position, self.targets)
         while self.actions:
             self.handle_interaction(self.actions.popleft(), self.selected)
+        self.sync_audio()
+
+    def sync_audio(self):
+        self.audio.sync_bubble(not self.paused and self.ingredients.snapshot().pot.stage is PotStage.COOKING)
 
     def handle_interaction(self, action, target):
         """Compose task 2 through its public methods; player owns no food state."""
         if target is None:
             self.message = "Move closer to a station marker."
+            self.audio.play("reject")
+            return
         elif action == "remove" and target.kind != "plate":
             self.message = "Q is the plate-removal hook. Move to the plate."
-        elif target.kind == "chop":
-            self.interaction_count += 1
+            self.audio.play("reject")
+            return
+        self.interaction_count += 1
+        state = self.ingredients.snapshot()
+        cue = "pickup"
+        if target.kind == "chop":
             self.message = "Chopping board ready. Cutting will be connected here later."
-        elif target.kind == "serve" and action == "interact":
-            self.interaction_count += 1
-            self.message = "Service hatch to the dining room. Orders will connect here later."
+            return
+        if action == "remove":
+            result = self.ingredients.remove_from_plate()
+        elif target.kind == "box":
+            result = self.ingredients.collect(target.ingredient_id)
+            if state.plate.location is PlateLocation.CARRIED:
+                cue = "plate"
+        elif target.kind == "plate":
+            if state.plate.location is PlateLocation.CARRIED:
+                result, cue = self.ingredients.return_plate(), "return"
+            elif state.held is None:
+                result = self.ingredients.pickup_plate()
+            else:
+                result, cue = self.ingredients.add_to_plate(), "plate"
+        elif target.kind == "bin":
+            result, cue = self.ingredients.discard(), "return"
+        elif target.kind == "pot":
+            if state.pot.stage is PotStage.READY:
+                result, cue = self.ingredients.take_cooked_portion(), "plate"
+            else:
+                result, cue = self.ingredients.add_to_pot(), "plate"
         else:
-            self.interaction_count += 1
-            if action == "remove":
-                result = self.ingredients.remove_from_plate()
-                self.message = f"REMOVE: {result.message}"
-            elif target.kind == "box":
-                result = self.ingredients.collect(target.ingredient_id)
-                self.message = result.message
-            elif target.kind == "plate":
-                result = self.ingredients.add_to_plate()
-                self.message = f"Plate: {result.message}"
-            elif target.kind == "bin":
-                result = self.ingredients.discard()
-                self.message = result.message
+            if not self.orders.started:
+                result, cue = self.orders.start(), "accept"
+            elif state.plate.location is PlateLocation.CARRIED:
+                result, cue = self.orders.try_serve(state.plate, self.ingredients), "serve"
+                if result.success:
+                    self.outgoing = state.plate.ingredients
+                    self.outgoing_seconds = 0.9
+            elif state.held is not None:
+                result, cue = self.orders.try_serve_held(self.ingredients), "serve"
+                if result.success:
+                    self.outgoing = (state.held,)
+                    self.outgoing_seconds = 0.9
+            else:
+                result = ActionResult(False, "Bring a plate, sandwich, or milk")
+        self.message = f"REMOVE: {result.message}" if action == "remove" else result.message
+        self.audio.play(cue if result.success else "reject")
 
     def text(self, key, value, x, y, size=14, color=INK, **kwargs):
         # Rasterize type at its displayed size, instead of shrinking cached
@@ -148,6 +237,8 @@ class GameView(arcade.View):
         label = self._text_cache[key]
         if label.text != value:
             label.text = value
+        if label.color != color:
+            label.color = color
         with self.ui_camera.activate():
             label.draw()
 
@@ -165,7 +256,7 @@ class GameView(arcade.View):
         foot_x, foot_y = self.player.ground_position
         arcade.draw_ellipse_filled(foot_x, foot_y - 7, 34, 10, (65, 61, 48, 85))
         for target in self.targets:
-            selected = self.selected == target
+            selected = self.selected == target and target.kind != "chop"
             if selected or self.debug:
                 arcade.draw_ellipse_outline(target.x, target.y - 32, 30, 12,
                                             ACCENT if selected else (92, 119, 91), 2)
@@ -174,6 +265,17 @@ class GameView(arcade.View):
                           14, (34, 72, 60), anchor_x="center")
         state = self.ingredients.snapshot()
         self.kitchen.draw_props(self.player, self.players, state)
+        if self.selected and self.selected.kind in ("box", "plate"):
+            rectangle = (PLATE_TABLE_RECT if self.selected.kind == "plate"
+                         else CRATE_RECTS[self.selected.ingredient_id])
+            x, y, width, height = rectangle
+            arcade.draw_rect_outline(arcade.XYWH(x, y, width + 6, height + 6),
+                                     (34, 90, 68), 3)
+        if self.outgoing_seconds:
+            progress = 1 - self.outgoing_seconds / 0.9
+            for index, food in enumerate(self.outgoing):
+                draw_icon(self.kitchen.textures[food], 744 + (index - (len(self.outgoing) - 1) / 2) * 29,
+                          558 + progress * 45, 24 * (1 - 0.5 * progress))
         self.text("pass_label", "SERVICE  /  DINING ROOM", 744, 672, 9,
                   (244, 224, 172), anchor_x="center")
         self.text("pantry_label", "PANTRY", 235, 43, 9, (73, 49, 38), anchor_x="center")
@@ -184,22 +286,21 @@ class GameView(arcade.View):
             self.players.draw_hit_boxes(color=(237, 80, 80), line_thickness=2)
             for target in self.targets:
                 arcade.draw_circle_outline(target.x, target.y, 64, (80, 140, 130), 1)
-        arcade.draw_lbwh_rectangle_filled(*SIDEBAR_BOUNDS, (24, 37, 44))
+        self.sidebar.draw(self.orders.snapshot(), self.orders.stats(), self.kitchen.textures, self.text)
         x = KITCHEN_WIDTH + 18
-        top = WINDOW_HEIGHT
-        self.text("eyebrow", "KITCHEN / PLAYER DEMO", x, top - 35, 11, ACCENT)
-        self.text("title", "Classic Chef", x, top - 76, 24)
-        self.text("subtitle", "The restaurant kitchen", x, top - 105, 15, MUTED)
-        self.text("controls", "WASD / arrows    Move\nE    Use station\nQ    Remove from plate\nP    Pause / resume\nR    Reset\nF1   Solid boundaries\nEsc  Close",
-                  x, top - 150, 14, INK, multiline=True, width=225, anchor_y="top")
-        self.text("status", f"State: {self.player.state}\nHand: {state.held or 'empty'}\nPlate: {len(state.plate.ingredients)}/4",
-                  x, top - 320, 13, ACCENT, multiline=True, width=225, anchor_y="top")
-        nearby = TARGET_LABELS[self.selected.target_id] if self.selected else "Explore the room"
-        self.text("nearby", nearby, x, top - 412, 18, INK)
-        self.text("message", fill(self.message, width=26), x, top - 446, 13, INK,
+        hand = "plate" if state.plate.location is PlateLocation.CARRIED else (state.held or "empty").replace("_", " ")
+        pot = state.pot.stage.value
+        if state.pot.stage is PotStage.COOKING:
+            pot = f"cooking ({state.pot.remaining_seconds:.1f}s)"
+        plate_load = "Pasta (full)" if POT_RECIPE.dish in state.plate.ingredients else f"{len(state.plate.ingredients)}/4"
+        self.text("status", f"Hand: {hand}\nPlate: {plate_load} · {state.plate.location}\nPot: {pot}",
+                  x, 245, 12, ACCENT, multiline=True, width=220, anchor_y="top")
+        nearby = station_hint(self.selected, state, self.orders.started) if self.selected else "Move near a station"
+        self.text("nearby", nearby, x, 169, 12, INK)
+        self.text("message", self.message, x, 151, 12, INK,
                   multiline=True, width=220, anchor_y="top")
-        self.text("future", "Pickup and plating work.\nCooking/orders connect next.\n\nDrag the window edges to resize.",
-                  x, 110, 11, MUTED, multiline=True, width=220, anchor_y="top")
+        self.text("controls", f"WASD / arrows   Move\nE   Use station   Q   Remove food\nP   Pause   R   Reset   Esc   Close\nM   Sound: {'muted' if self.audio.muted else 'on'}   F1   Guides",
+                  x, 91, 11, MUTED, multiline=True, width=220, anchor_y="top")
         if self.paused:
             arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,
                                               (20, 30, 40, 170))
@@ -212,6 +313,11 @@ class DemoWindow(arcade.Window):
     def on_deactivate(self):
         if isinstance(self.current_view, GameView):
             self.current_view.clear_input()
+
+    def close(self):
+        if isinstance(self.current_view, GameView):
+            self.current_view.audio.stop()
+        super().close()
 
 
 def create_window(*, visible=True):

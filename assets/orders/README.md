@@ -1,2 +1,5 @@
-Member 3 puts order/sidebar artwork here. Order logic must also work with simple
-placeholder visuals while these assets are being created.
+# Order icons
+
+The sidebar reuses the food sprites from `assets/ingredients/sprites/`. The
+pasta icon uses the standalone `pasta.png` sprite.
+Keeping one copy of the artwork also keeps the sidebar and kitchen in sync.

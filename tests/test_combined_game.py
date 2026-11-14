@@ -51,3 +51,22 @@ def test_paused_food_actions_do_not_mutate_state():
         assert view.ingredients.snapshot() == before
     finally:
         window.close()
+
+
+def test_plate_table_can_be_used_from_both_sides():
+    window = create_window(visible=False)
+    try:
+        view = window.current_view
+        use(view, "box_tomato")
+        use(view, "plate_back")
+        assert view.selected.target_id == "plate_back"
+        assert view.ingredients.snapshot().plate.ingredients == ("tomato",)
+        use(view, "plate_back", arcade.key.Q)
+        assert view.ingredients.snapshot().held == "tomato"
+        use(view, "plate")
+        use(view, "plate")
+        assert view.ingredients.snapshot().plate.location == "carried"
+        use(view, "plate_back")
+        assert view.ingredients.snapshot().plate.location == "docked"
+    finally:
+        window.close()

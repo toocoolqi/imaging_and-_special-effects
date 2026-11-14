@@ -9,9 +9,76 @@ from restaurant.game_view import create_window
 from restaurant.display import window_geometry
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION, PROPS
 from restaurant.player.controller import FOOT_HALF_HEIGHT, FOOT_HALF_WIDTH, FOOT_OFFSET_Y
+from restaurant.shared.contracts import PlateLocation, PotStage
 from restaurant.shared.settings import (
-    KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, TARGETS, WINDOW_HEIGHT, WINDOW_WIDTH,
+    KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, PLAYER_SPEED, TARGETS, WINDOW_HEIGHT, WINDOW_WIDTH,
 )
+
+
+def exercise_service(view, output, check):
+    """Exercise two orders with the production keys and capture rendered states."""
+    targets = {target.target_id: target for target in TARGETS}
+
+    def use():
+        view.on_key_press(arcade.key.E, 0)
+        view.on_update(0)
+        view.on_key_release(arcade.key.E, 0)
+
+    def station(name):
+        target = targets[name]
+        view.player.reset((target.x, target.y))
+        use()
+
+    def capture(name):
+        view.on_draw()
+        arcade.get_image().save(output / name)
+
+    def serve_and_return(completed):
+        station("serve")
+        plate = view.ingredients.snapshot().plate
+        check(plate.location is PlateLocation.CARRIED and not plate.ingredients
+              and view.orders.stats().score == 150 * completed,
+              f"Order {completed} served once; empty plate remains carried")
+        capture(f"order-{completed}-served.png")
+        # Walk down the east aisle, then turn west below the plate counter.
+        serve, home = targets["serve"], targets["plate"]
+        for key, distance in ((arcade.key.S, serve.y - home.y),
+                              (arcade.key.A, serve.x - home.x)):
+            view.on_key_press(key, 0)
+            remaining = distance / PLAYER_SPEED
+            while remaining > 1e-8:
+                step = min(remaining, 1 / 60)
+                view.on_update(step)
+                remaining -= step
+            view.on_key_release(key, 0)
+        check(view.selected == home, "Walked the empty plate back to its table")
+        use()
+        check(view.ingredients.snapshot().plate.location is PlateLocation.DOCKED,
+              "Returned the same empty plate")
+
+    view.reset()
+    station("serve")
+    station("plate")
+    for item in ("sandwich", "tomato"):
+        station(f"box_{item}")
+    serve_and_return(1)
+
+    station("plate")
+    for item in ("noodles", "milk", "tomato"):
+        station(f"box_{item}")
+    station("pot")
+    check(view.ingredients.snapshot().pot.stage is PotStage.COOKING,
+          "Noodles, milk, and tomato start cooking")
+    view.on_update(1)
+    capture("cooking-pasta.png")
+    view.on_update(3)
+    check(view.ingredients.snapshot().pot.stage is PotStage.READY,
+          "Pot finishes after four seconds")
+    station("pot")
+    capture("plated-pasta.png")
+    view.on_update(12)
+    serve_and_return(2)
+    capture("plate-returned.png")
 
 
 def run_packaged_check(output: Path) -> int:
@@ -145,8 +212,8 @@ def run_packaged_check(output: Path) -> int:
             view.player.reset((serve.x, serve.y))
             view.on_key_press(arcade.key.E, 0)
             view.on_update(0.01)
-            check(view.selected == serve and "dining room" in view.message,
-                  "Serving hook reaches the visible dining-room hatch")
+            check(view.selected == serve and len(view.orders.snapshot()) == 1,
+                  "Service table starts the first order")
             view.clear_input()
             view.player.reset((chop.x, chop.y))
             view.on_key_press(arcade.key.P, 0)
@@ -164,6 +231,7 @@ def run_packaged_check(output: Path) -> int:
             view.on_draw()
             arcade.get_image().save(output / "collision-guide.png")
             view.debug = False
+            exercise_service(view, output, check)
             window.set_size(800, 600)
             view.on_draw()
             viewport = view.camera.viewport

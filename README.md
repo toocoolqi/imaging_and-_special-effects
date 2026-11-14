@@ -1,7 +1,8 @@
 # Restaurant game — shared team starter
 
-One shared Python Arcade project for all three members. The Classic Chef player
-and task2 ingredient/plate systems now work together. The current division of
+One shared Python Arcade project for all three members. The Classic Chef player,
+food preparation, cooking, plate transport, and service orders work together in
+the warm kitchen. The current division of
 work, including both kitchens and the next food/order milestone, is in
 [TEAM_PLAN.md](docs/TEAM_PLAN.md).
 
@@ -55,13 +56,26 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | Q | Remove the newest plated food into empty hands |
 | P | Pause/resume |
 | R | Reset |
+| M | Mute/unmute kitchen sounds |
 | F1 | Show collision and interaction guides |
 | Esc | Exit |
 | Drag window edges / maximize | Resize while keeping the whole room visible |
 
-No hold-item animations are included. Crates, plate and bin now use the task2 IngredientSystem.
-Cooking, reusable plate transport, sidebar orders and sound are assigned next.
-The chopping table's E preview is reserved for the future cutting system.
+Use E at the service table to start the round with one order. A new order
+arrives after a random wait of 5 to 10 seconds while there is room, up to three active orders.
+Each order has two minutes from when it appears. A successful
+serve earns 100 points, plus 50 when served within 30 seconds of the order starting.
+Pick up the plate with
+E at its table, then use E at pantry crates to add food directly to the plate.
+Without the plate, carry one item by hand and use E at the table to add it.
+For Pasta, collect noodles, milk, and tomato on the plate, then use E at the
+stove to transfer the recipe ingredients. After four seconds, use E at the
+stove again with an empty plate to collect the cooked portion. Pasta takes up
+the whole plate. Use E at the bin while carrying the plate to empty it.
+Use E at the hatch to
+serve, then E at the plate table to return the empty plate. A plain Sandwich
+or Milk order can also be served directly from your hand.
+The chopping board remains a preview station.
 
 ## Current member assignments
 
@@ -74,20 +88,20 @@ Read [TEAM_PLAN.md](docs/TEAM_PLAN.md), then your guide:
 | Member 3 | Both kitchens and their overgrown/damaged variants | [Environments](docs/team/03_kitchen_environments.md) |
 
 The old member guides describe the previous split and are historical. The
-IngredientSystem from task2 now works in the kitchen; run its independent lab
-with `python -m demos.ingredients_demo`. Cooking, order processing, physical
-plate transport and audio are the next assignment, not completed features.
+IngredientSystem also runs independently with `python -m demos.ingredients_demo`.
+Run the main game for cooking, plate transport, order service, and audio.
 
 ## Run the checks
 
 ```powershell
 .venv\Scripts\python.exe -m pytest tests -q
 .venv\Scripts\python.exe -m compileall -q restaurant demos tools main.py
+.venv\Scripts\python.exe main.py --self-test artifacts\food-check
 ```
 
 Tests include a real hidden Arcade window, so run the full suite on a desktop.
-The source suite covers movement, collisions, animation, input, interactions and
-shared records. Test the controls visually on your own computer before a PR.
+The self-test cooks and serves two consecutive orders and saves screenshots
+of cooking, serving, and returning the plate.
 
 ## Package a new independent Windows demo
 
@@ -110,6 +124,4 @@ The report is `artifacts/packaged-check/self-test.json`; success means
 The build-only hook corrects Arcade 3.3.3's VERSION-file packaging destination.
 See [PyInstaller's runtime resource guidance](https://pyinstaller.org/en/stable/runtime-information.html).
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit. The original
-member guides describe the eventual integrated game; this repository currently
-delivers its shared foundation and player subsystem.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.
