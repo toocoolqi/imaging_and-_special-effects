@@ -16,8 +16,8 @@ See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.8.0.zip** from the
-[visual polish release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.8.0).
+Download **kitchen-demo-windows-v0.8.1.zip** from the
+[current release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.8.1).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.

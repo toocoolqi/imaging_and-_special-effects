@@ -7,7 +7,6 @@ from restaurant.display import artwork_viewport
 from restaurant.kitchen.details import PixelDetails
 from restaurant.kitchen.scene import load_textures
 from restaurant.pixel_art import PixelCanvas, draw_pixel_texture
-from restaurant.player.controller import ASSET_DIR as CHEF_DIR
 from restaurant.shared.settings import WINDOW_HEIGHT, WINDOW_WIDTH
 
 
@@ -92,7 +91,6 @@ class MainMenu(arcade.View):
         self.ui_camera = arcade.Camera2D(position=(0, 0))
         self.art = menu_art()
         self.textures = load_textures()
-        self.chef = arcade.load_texture(CHEF_DIR / "down_4.png")
         self.labels = {}
         self.view_size = None
 
@@ -136,8 +134,7 @@ class MainMenu(arcade.View):
             self.start_game()
 
     def draw_picture(self, key, x, y, width, height):
-        texture = self.chef if key == "chef" else self.textures[key]
-        draw_pixel_texture(texture, arcade.XYWH(x, y, width, height))
+        draw_pixel_texture(self.textures[key], arcade.XYWH(x, y, width, height))
 
     def draw_kitchen(self):
         self.draw_picture("spice_shelf", 715, 531, 202, 98)
@@ -147,9 +144,6 @@ class MainMenu(arcade.View):
         self.draw_picture("pot", 1006, 414, 46, 37)
         self.draw_picture("crate_tomato", 656, 225, 79, 108)
         self.draw_picture("crate_sandwich", 1070, 203, 75, 103)
-        for x, y, w, h in ((795, 151, 104, 18), (786, 154, 122, 12)):
-            arcade.draw_lbwh_rectangle_filled(x, y, w, h, (129, 108, 78))
-        self.draw_picture("chef", 849, 328, self.chef.width * 4, self.chef.height * 4)
 
     def label(self, value, x, y, size, color=INK, *, bold=False, center=False):
         if value not in self.labels:
