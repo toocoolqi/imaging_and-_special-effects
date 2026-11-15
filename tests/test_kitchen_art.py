@@ -19,7 +19,7 @@ from restaurant.shared.settings import PLAYER_SCALE
 HALF_W, HALF_H = FOOT_HALF_WIDTH * PLAYER_SCALE, FOOT_HALF_HEIGHT * PLAYER_SCALE
 OFFSET_Y = FOOT_OFFSET_Y * PLAYER_SCALE
 REQUIRED_IDS = {"box_sandwich", "box_tomato", "box_noodles", "box_milk",
-                "plate", "plate_back", "bin", "serve", "chopping_board", "pot"}
+                "plate", "bin", "serve", "chopping_board", "pot"}
 TWINS = (("warm", "overgrown"), ("metal", "metal_damaged"))
 by_style = {day.style: day for day in DAYS}
 

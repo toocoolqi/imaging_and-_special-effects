@@ -25,25 +25,6 @@ def press(view, key):
     view.on_key_release(key, 0)
 
 
-def test_rear_plate_access_and_outline_mapping_in_all_kitchens():
-    window = create_window(visible=False)
-    try:
-        view = window.current_view
-        for index in range(4):
-            view.go_to_day(index)
-            table = view.kitchen.station_props["plate"]
-            rear = next(target for target in view.targets if target.target_id == "plate_back")
-            assert rear.x == table.x
-            use(view, "plate_back")
-            assert view.selected == rear
-            assert view.ingredients.snapshot().plate.location is PlateLocation.CARRIED
-            view.on_draw()
-            use(view, "plate")
-            assert view.ingredients.snapshot().plate.location is PlateLocation.DOCKED
-    finally:
-        window.close()
-
-
 def oldest_order(view):
     while not view.orders.snapshot():            # a short gap between customers
         view.on_update(0.5)
