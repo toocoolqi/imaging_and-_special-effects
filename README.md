@@ -1,4 +1,4 @@
-> The assignment build adds four playable days, orders, cooking and sound. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md). The handoff notes below describe the prior v0.5 baseline.
+> The assignment build has four playable days, Task 2 cooking and orders, and a larger chef with standing, walking, plate carrying and chopping animations. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md).
 
 # Restaurant game — shared team starter
 
@@ -16,8 +16,8 @@ See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.5.0.zip** from the
-[polished restaurant demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.5.0).
+Download **kitchen-demo-windows-v0.7.0.zip** from the
+[chef animation release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.7.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -55,15 +55,16 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | WASD / arrows | Move, with equal straight and diagonal speed |
 | E | Use the nearest station once within 64 pixels |
 | Q | Remove the newest plated food into empty hands |
+| Enter | Advance after reaching the gold target and returning the plate |
+| M | Mute/unmute |
 | P | Pause/resume |
 | R | Reset |
 | F1 | Show collision and interaction guides |
 | Esc | Exit |
 | Drag window edges / maximize | Resize while keeping the whole room visible |
 
-No hold-item animations are included. Crates, plate and bin now use the task2 IngredientSystem.
-Cooking, reusable plate transport, sidebar orders and sound are assigned next.
-The chopping table's E preview is reserved for the future cutting system.
+Press E at the board with a tomato in hand or on the carried plate. The chef
+chops it, then you can press E to collect the pieces.
 
 ## Current member assignments
 
@@ -77,8 +78,8 @@ Read [TEAM_PLAN.md](docs/TEAM_PLAN.md), then your guide:
 
 The old member guides describe the previous split and are historical. The
 IngredientSystem from task2 now works in the kitchen; run its independent lab
-with `python -m demos.ingredients_demo`. Cooking, order processing, physical
-plate transport and audio are the next assignment, not completed features.
+with `python -m demos.ingredients_demo`. The main game uses the contributed
+Task 2 cooking, table service and order card systems from commit `4479a22`.
 
 ## Run the checks
 

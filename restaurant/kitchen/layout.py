@@ -58,7 +58,7 @@ PROPS = (
     KitchenProp("wash_counter", "sink", 132, 526, 210, 98, (0, -28, 196, 40)),
     KitchenProp("floor_stove", "stove", 332, 526, 124, 119, (0, -21, 110, 70)),
     KitchenProp("floor_bin", "bin", 886, 112, 50, 70, (0, -17, 42, 32)),
-    KitchenProp("chopping_board", "clean_board", 300, 382, 76, 35, support="chopping_table"),
+    KitchenProp("chopping_board", "clean_board", 260, 373, 76, 35, support="chopping_table"),
     KitchenProp("display_plate", "plate", 620, 381, 66, 45, support="plate_counter"),
     # Pot bottom sits on the front-left burner; other burners remain visible.
     KitchenProp("display_pot", "pot", 307, 559, 46, 37, support="floor_stove"),
@@ -89,7 +89,7 @@ TARGETS = (
     InteractionTarget("box_noodles", "box", 280, 174, "noodles"),
     InteractionTarget("box_milk", "box", 370, 174, "milk"),
     InteractionTarget("plate", "plate", 620, 302),
-    InteractionTarget("chopping_board", "chop", 300, 302),
+    InteractionTarget("chopping_board", "chop", 240, 318),
     InteractionTarget("bin", "bin", 886, 174),
     InteractionTarget("pot", "pot", 332, 448),
     InteractionTarget("serve", "serve", 744, 472),

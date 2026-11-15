@@ -1,32 +1,30 @@
-"""Short synthesized cues bundled with the game."""
+"""Arcade sound cues and a single lifecycle-managed bubbling loop."""
 from pathlib import Path
 
 import arcade
 
 AUDIO_DIR = Path(__file__).resolve().parents[1] / "assets" / "audio"
+CUES = ("pickup", "plate", "return", "accept", "serve", "reject", "bubble", "advance")
 
 
-class GameAudio:
-    def __init__(self, enabled):
-        self.muted = not enabled
-        self.sounds = {}
-        self.bubbles = None
+class KitchenAudio:
+    def __init__(self):
+        self.muted = False
+        self._sounds = {cue: arcade.load_sound(AUDIO_DIR / f"{cue}.wav") for cue in CUES}
+        self._bubble = None
 
-    def play(self, name, *, loop=False):
-        if self.muted:
-            return None
-        if name not in self.sounds:
-            self.sounds[name] = arcade.load_sound(AUDIO_DIR / f"{name}.wav")
-        return arcade.play_sound(self.sounds[name], volume=.26 if loop else .4, loop=loop)
+    def play(self, cue):
+        if not self.muted:
+            arcade.play_sound(self._sounds[cue], volume=0.28 if cue == "reject" else 0.42)
 
-    def set_bubbling(self, active):
-        if active and self.bubbles is None:
-            self.bubbles = self.play("bubble", loop=True)
-        elif not active and self.bubbles is not None:
-            arcade.stop_sound(self.bubbles)
-            self.bubbles = None
+    def sync_bubble(self, cooking):
+        if cooking and not self.muted:
+            if self._bubble is None:
+                self._bubble = arcade.play_sound(self._sounds["bubble"], volume=0.28, loop=True)
+        else:
+            self.stop()
 
-    def toggle(self):
-        self.muted = not self.muted
-        if self.muted:
-            self.set_bubbling(False)
+    def stop(self):
+        if self._bubble is not None:
+            arcade.stop_sound(self._bubble)
+            self._bubble = None

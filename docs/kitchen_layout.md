@@ -1,8 +1,8 @@
 # Restaurant kitchen layout
 
 The room is **960 x 704 world pixels**, about 14% less area than v0.3.0. A
-256-pixel sidebar sits outside it. The chef remains 56 x 92, so the smaller room
-feels more proportionate without shrinking the character or its animations.
+256-pixel sidebar sits outside it. The chef now renders at 184 world pixels tall.
+Its foot hitbox and movement coordinates are independent of that size.
 
 The layout follows a simple route: pantry crates, chopping island, stove,
 plate island, then the **service hatch into the dining room**. The plate island
@@ -12,7 +12,8 @@ The service hatch is a visible pass for food; the chef cannot walk through it.
 
 ![Kitchen preview](images/kitchen_preview.png)
 
-Crates, the plate and bin use task2 food state in the shared game: E collects/adds/discards and Q removes from the plate. Service/chopping remain previews. Cooking and physical plate transport are assigned in [TEAM_PLAN.md](TEAM_PLAN.md). No hold-item animations are included.
+Crates, the plate, pot, chopping board and service hatch use the live gameplay
+systems. See [current gameplay](FINAL_GAMEPLAY.md) for player controls and recipes.
 
 ## Collisions and drawing order
 
@@ -52,13 +53,13 @@ all accessible obstacle sides are checked with the actual foot dimensions.
 
 ## Integration hooks
 
-- `InteractionTarget("chopping_board", "chop", 300, 302)` previews future cutting.
+- `InteractionTarget("chopping_board", "chop", 240, 318)` is the warm kitchen board approach.
 - `InteractionTarget("plate", "plate", 620, 302)` handles the E/Q plate intents.
 - `InteractionTarget("serve", "serve", 744, 472)` is now at the service hatch.
 
-These stable IDs reach `GameView.handle_interaction(action, target)`. Connect
-future system methods there. Keep food state out of `PlayerController`.
-No cutting timer, inventory or order logic is created by this demo.
+These stable IDs reach `GameView.handle_interaction(action, target)`. The chef
+faces the board during its timed chopping sequence. The board displays raw
+tomato, then chopped pieces that can be collected into the hand or plate.
 
 Food IDs now match task2: sandwich, tomato, noodles, milk. Box targets are box_sandwich, box_tomato, box_noodles, box_milk. The kitchen loads their prepared sprites directly from assets/ingredients/sprites, including plate and pot_empty. Other kitchen architecture keeps its existing artwork.
 

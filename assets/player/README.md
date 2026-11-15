@@ -1,5 +1,8 @@
 # Classic Chef frames
 
+The current game loads the [new directional animation frames](animated/README.md).
+The original cropped reference frames below are retained for provenance.
+
 These PNGs were extracted from the user's uploaded `image.png` (1536x1024),
 specifically Chef 1 / Classic Chef. They retain the artwork from that image;
 no replacement character was generated. Original usage rights remain with the
@@ -7,7 +10,7 @@ source asset; this project does not assert a new license for the artwork.
 
 - `down_0..3`, `up_0..3`, `left_0..3`, `right_0..3`: the four walk frames in each
   labeled column, ordered top-left, top-right, bottom-left, bottom-right.
-- `idle_0..3`: the four front-facing idle samples; the demo uses `idle_0`.
+- `idle_0..3`: the four front-facing idle samples; the first demo used `idle_0`.
 - `frames.json`: original source crop centers and prepared canvas dimensions.
 - `frame_preview.png`: all prepared frames on a contrasting background.
 

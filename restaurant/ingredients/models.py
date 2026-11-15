@@ -2,9 +2,19 @@
 from dataclasses import dataclass, field
 from typing import Final
 
-from restaurant.shared.contracts import FoodId
+from restaurant.shared.contracts import DishId, FoodId, IngredientId, PlateLocation, PotSnapshot
 
 PLATE_CAPACITY: Final = 4
+
+
+@dataclass(frozen=True)
+class PotRecipe:
+    required: frozenset[IngredientId]
+    duration: float
+    dish: DishId
+
+
+POT_RECIPE = PotRecipe(frozenset(("noodles", "milk", "tomato")), 4.0, "pasta")
 
 
 @dataclass
@@ -14,4 +24,5 @@ class _IngredientState:
     _held: FoodId | None = None
     _plate: list[FoodId] = field(default_factory=list)
     _revision: int = 0
-    _carrying_plate: bool = False
+    _location: PlateLocation = PlateLocation.DOCKED
+    _pot: PotSnapshot = PotSnapshot()

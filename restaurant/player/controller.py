@@ -9,10 +9,13 @@ from restaurant.shared.settings import (
     FRAME_SECONDS, KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, PLAYER_SPEED,
 )
 
-ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "player"
+ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "player" / "animated"
+VISUAL_SCALE = 2
+VISUAL_HEIGHT = 184
+FRAME_CENTER_ABOVE_FEET = 78
 VECTORS = {"up": (0, 1), "down": (0, -1), "left": (-1, 0), "right": (1, 0)}
 # A top-down character collides at the feet, not with the hat and shoulders.
-# Keep this same footprint for EVERY frame. Visual size stays 56 x 92.
+# Keep this footprint across every frame and visual size.
 FOOT_HALF_WIDTH, FOOT_HALF_HEIGHT, FOOT_OFFSET_Y = 16, 10, -32
 HIT_BOX = ((-16, -42), (16, -42), (16, -22), (-16, -22))
 
@@ -27,13 +30,13 @@ def movement_vector(keys) -> tuple[float, float]:
 
 class PlayerController:
     def __init__(self, spawn: tuple[float, float]):
-        self._walk = {direction: [self._load(f"{direction}_{i}.png") for i in range(4)]
-                      for direction in VECTORS}
-        # The source has only a front-facing idle column. Other directions freeze
-        # a walking frame so the chef keeps facing the correct way while stopped.
-        self._idle = {direction: frames[0] for direction, frames in self._walk.items()}
-        self._idle["down"] = self._load("idle_0.png")
-        self.sprite = arcade.Sprite(self._idle["down"], scale=PLAYER_SCALE)
+        self._frames = {direction: [self._load(f"{direction}_{i}.png") for i in range(8)]
+                        for direction in VECTORS}
+        self._chop_frames = [self._load(f"chop_{i}.png") for i in range(4)]
+        self.sprite = arcade.Sprite(self._frames["down"][0], scale=PLAYER_SCALE)
+        self.carrying_plate = False
+        self.chopping = False
+        self._animation_time = 0.0
         self._engine = None
         self._walls = None
         self._keys: list[Direction] = []  # Press order settles diagonal facing.
@@ -64,8 +67,69 @@ class PlayerController:
         return self._direction
 
     @property
-    def state(self) -> str:
+    def pose(self) -> str:
+        if self.chopping:
+            return "chop"
         return "walk" if self.is_moving else "idle"
+
+    @property
+    def state(self) -> str:
+        return self.pose
+
+    @property
+    def visual_height(self) -> int:
+        return VISUAL_HEIGHT
+
+    @property
+    def plate_anchor(self):
+        """Where plated food sits in the current pose. The rear view hides it."""
+        if not self.carrying_plate or self.chopping or self.direction == "up":
+            return None
+        x, y = self.ground_position
+        return (x + {"down": 0, "left": -32, "right": 30}[self.direction],
+                y + {"down": 34, "left": 39, "right": 43}[self.direction])
+
+    @property
+    def hand_anchor(self):
+        x, y = self.ground_position
+        return (x + {"down": 31, "left": -33, "right": 33, "up": 30}[self.direction],
+                y + 40)
+
+    def draw(self):
+        x, y = self.ground_position
+        texture = self.sprite.texture
+        arcade.draw_texture_rect(texture, arcade.XYWH(
+            x, y + FRAME_CENTER_ABOVE_FEET, texture.width * VISUAL_SCALE,
+            texture.height * VISUAL_SCALE), pixelated=True)
+
+    def set_visual_state(self, *, carrying_plate=None, chopping=None):
+        changed = False
+        if carrying_plate is not None and self.carrying_plate != carrying_plate:
+            self.carrying_plate = carrying_plate
+            changed = True
+        if chopping is not None and self.chopping != chopping:
+            self.chopping = chopping
+            changed = True
+            if chopping:
+                self._direction = "up"
+                self.is_moving = False
+        if changed:
+            self._animation_time = 0.0
+            self._set_frame()
+
+    def _set_frame(self):
+        if self.chopping:
+            index = int(self._animation_time / .11) % len(self._chop_frames)
+            texture = self._chop_frames[index]
+        else:
+            base = 4 if self.carrying_plate else 0
+            index = 0
+            if self.is_moving:
+                # Contact, passing, opposite contact, passing.
+                index = (1, 3, 2, 3)[int(self._animation_time / FRAME_SECONDS) % 4]
+            texture = self._frames[self._direction][base + index]
+        if texture is not self.sprite.texture:
+            self.sprite.texture = texture
 
     def set_move_key(self, key: Direction, pressed: bool) -> None:
         if key not in VECTORS:
@@ -74,6 +138,10 @@ class PlayerController:
             self._keys.append(key)
         elif not pressed and key in self._keys:
             self._keys.remove(key)
+            if movement_vector(self._keys) == (0.0, 0.0):
+                self.is_moving = False
+                self._animation_time = 0.0
+                self._set_frame()
 
     def clear_input(self) -> None:
         """Call when pausing, changing scenes, or losing keyboard focus."""
@@ -81,11 +149,12 @@ class PlayerController:
         self.is_moving = False
         self._animation_time = 0.0
         self.sprite.change_x = self.sprite.change_y = 0.0
-        self.sprite.texture = self._idle[self._direction]
+        self._set_frame()
 
     def reset(self, spawn: tuple[float, float]) -> None:
         if not all(map(isfinite, spawn)):
             raise ValueError("Spawn coordinates must be finite.")
+        self.carrying_plate = self.chopping = False
         self.sprite.position = spawn
         self._direction: Direction = "down"
         self.clear_input()
@@ -107,6 +176,10 @@ class PlayerController:
         if not isfinite(delta_time) or delta_time < 0:
             raise ValueError("delta_time must be finite and nonnegative.")
         if delta_time == 0:
+            return
+        if self.chopping:
+            self._animation_time += delta_time
+            self._set_frame()
             return
         x, y = movement_vector(self._keys)
         previous_direction = self._direction
@@ -138,7 +211,4 @@ class PlayerController:
             self._animation_time = 0.0
         if self.is_moving:
             self._animation_time += dt
-            index = int(self._animation_time / FRAME_SECONDS) % 4
-            self.sprite.texture = self._walk[self._direction][index]
-        else:
-            self.sprite.texture = self._idle[self._direction]
+        self._set_frame()

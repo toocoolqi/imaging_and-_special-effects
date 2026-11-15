@@ -2,6 +2,7 @@
 import arcade
 
 from restaurant.game_view import create_window
+from restaurant.shared.contracts import PlateLocation
 from restaurant.shared.settings import TARGETS
 
 
@@ -49,5 +50,22 @@ def test_paused_food_actions_do_not_mutate_state():
         before = view.ingredients.snapshot()
         use(view, "box_milk")
         assert view.ingredients.snapshot() == before
+    finally:
+        window.close()
+
+
+def test_pick_up_empty_plate_and_collect_food_directly():
+    window = create_window(visible=False)
+    try:
+        view = window.current_view
+        use(view, "plate")
+        assert view.ingredients.snapshot().plate.location is PlateLocation.CARRIED
+        use(view, "box_tomato")
+        use(view, "box_sandwich")
+        assert view.ingredients.snapshot().held is None
+        assert view.ingredients.snapshot().plate.ingredients == ("tomato", "sandwich")
+        use(view, "plate")
+        assert view.ingredients.snapshot().plate.location is PlateLocation.DOCKED
+        assert view.ingredients.snapshot().plate.ingredients == ("tomato", "sandwich")
     finally:
         window.close()

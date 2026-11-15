@@ -19,11 +19,12 @@ class KitchenDay:
 
 def kitchen_day(name, style):
     if style.startswith("metal"):
-        islands = {"plate_counter", "display_plate", "chopping_table", "chopping_board"}
-        props = tuple(replace(prop, x=920 - prop.x) if prop.prop_id in islands else prop
-                      for prop in PROPS)
-        targets = tuple(replace(target, x=920 - target.x) if target.kind in ("plate", "chop")
-                        else target for target in TARGETS)
+        offsets = {"plate_counter": -320, "display_plate": -320,
+                   "chopping_table": 320, "chopping_board": 320}
+        props = tuple(replace(prop, x=prop.x + offsets.get(prop.prop_id, 0)) for prop in PROPS)
+        target_offsets = {"plate": -320, "chop": 320}
+        targets = tuple(replace(target, x=target.x + target_offsets.get(target.kind, 0))
+                        for target in TARGETS)
     else:
         props, targets = PROPS, TARGETS
     return KitchenDay(name, style, props, targets)
