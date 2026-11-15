@@ -89,6 +89,11 @@ class KitchenScene:
         self.floor = None if self.room is not None else room_details(self.style)
         self.board_art = next(prop for prop in props if prop.prop_id == "chopping_board")
         self.props = {prop.prop_id: prop for prop in props if prop.solid}
+        self.station_props = {"plate": self.props["plate_counter"]}
+        self.station_props.update({
+            prop.asset.replace("crate_", "box_", 1): prop
+            for prop in self.props.values() if prop.asset.startswith("crate_")
+        })
         self.decorations = {prop_id: tuple(child for child in props if child.support == prop_id)
                             for prop_id in self.props}
 

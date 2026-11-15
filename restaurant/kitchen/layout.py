@@ -99,12 +99,14 @@ TARGETS = (
     InteractionTarget("box_noodles", "box", 280, 174, "noodles"),
     InteractionTarget("box_milk", "box", 370, 174, "milk"),
     InteractionTarget("plate", "plate", 620, 302),
+    InteractionTarget("plate_back", "plate", 620, 408),
     InteractionTarget("chopping_board", "chop", 240, 318),
     InteractionTarget("bin", "bin", 886, 174),
     InteractionTarget("pot", "pot", 332, 448),
     InteractionTarget("serve", "serve", 744, 472),
 )
 TARGET_LABELS = {
+    "plate_back": "Plate station",
     "box_sandwich": "Pantry", "box_tomato": "Pantry",
     "box_noodles": "Pantry", "box_milk": "Pantry",
     "plate": "Plate station", "chopping_board": "Chopping board",

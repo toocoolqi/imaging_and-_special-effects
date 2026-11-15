@@ -536,6 +536,13 @@ class GameView(arcade.View):
         blocker = self.encounters.blocker
         actors = ((blocker.y - 16, lambda: self.encounter_art.blocker(self.encounters)),) if self.encounters.blocker_rectangle else ()
         self.kitchen.draw_props(self.player, self.players, state, self.chopping, actors)
+        if self.selected:
+            key = "plate" if self.selected.kind == "plate" else self.selected.target_id
+            prop = self.kitchen.station_props.get(key)
+            if prop:
+                x, y, width, height = prop.rectangle
+                arcade.draw_rect_outline(arcade.XYWH(x, y, width + 6, height + 6),
+                                         (34, 90, 68), 3)
         self.encounter_art.air(self.encounters, self.player, self.kitchen, self.text)
         if self.chopping.state == "chopping":
             art = self.kitchen.board_art
