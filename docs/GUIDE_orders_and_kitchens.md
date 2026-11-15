@@ -1,6 +1,7 @@
 # Orders and kitchens: how it works
 
-This branch starts from **kitchen-demo-v0.8.1** and adds two parts:
+The orders/kitchens contribution started from **kitchen-demo-v0.8.1** and added two parts.
+The current main branch also includes [shift deadlines and enemies](SHIFT_AND_ENEMIES.md).
 
 - **Orders**: timed orders with gold, speed tips, a day target and days that
   get busier, an animated order panel, effects and sounds. This replaces the
@@ -8,10 +9,9 @@ This branch starts from **kitchen-demo-v0.8.1** and adds two parts:
 - **Kitchens**: the four environment art sets (warm clean, warm overgrown,
   steel clean, steel damaged), room ambience and background music.
 
-Everything else in v0.8.1 is unchanged and still works the same way: the menu,
-the chef animations, carrying, chopping, cooking, the pixel renderer and
-packaging. All 147 v0.8.1 tests still pass (the order tests were updated to
-the new rules), plus 83 new tests.
+The menu, chef animations, carrying, chopping, cooking and shared pixel renderer
+remain integrated. The v0.9.1 contribution had 230 checks; the current build
+adds encounter and deadline coverage and updates movement tests for the faster chef.
 
 ![The four kitchens](images/v0.9/day3_metal_damaged.png)
 
@@ -22,7 +22,7 @@ the new rules), plus 83 new tests.
 ```shell
 python main.py                     # menu -> Play -> Day 1
 python -m demos.orders_demo        # the order system on its own
-python -m pytest tests -q          # every check (230)
+python -m pytest tests -q          # every check
 python -m tools.build_kitchens     # rebuild the four kitchen art sets
 python -m tools.make_sounds        # rebuild the order sounds and music
 ```
@@ -159,13 +159,15 @@ plus one looping music track that stops on pause, mute and when hidden.
 
 | Day | Kitchen (art folder) | Target | Order timer | New order every | Story |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Overgrown (`warm_overgrown`) | 150 | 90 s | ~14 s | You take over an abandoned restaurant |
-| 2 | Warm (`warm_clean`) | 220 | 75 s | ~11 s | The same kitchen, restored with your gold |
-| 3 | Damaged Silver (`metal_damaged`) | 290 | 62 s | ~9 s | A second, run-down kitchen |
-| 4 | Silver (`metal_clean`) | 360 | 50 s | ~7.5 s | The same kitchen, renovated |
+| 1 | Overgrown (`warm_overgrown`) | 150 | 82 s | ~14 s | You take over an abandoned restaurant |
+| 2 | Warm (`warm_clean`) | 220 | 68 s | ~11 s | The same kitchen, restored with your gold |
+| 3 | Damaged Silver (`metal_damaged`) | 290 | 56 s | ~9 s | A second, run-down kitchen |
+| 4 | Silver (`metal_clean`) | 360 | 45 s | ~7.5 s | The same kitchen, renovated |
 
 Each day is busier: shorter timers, faster arrivals and a higher target (so
 more orders to serve), never more than three orders on screen.
+The overall shift budgets are 180, 165, 150 and 135 seconds. `GameView` checks
+this deadline before processing E/Q; `OrderSystem` still owns individual orders.
 
 Clean and damaged twins use the same furniture positions, footprints and
 stations (the silver rooms swap the two islands, as in v0.8.1). Each day also

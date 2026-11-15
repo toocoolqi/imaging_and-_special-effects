@@ -1,4 +1,4 @@
-> The assignment build has a clickable main menu, consistent pixel rendering, four playable days in four kitchen art sets (overgrown, warm, damaged steel, steel), Task 2 cooking, timed orders with gold and speed tips that get busier each day, order effects, room ambience and music, and a larger chef with standing, walking, plate carrying and chopping animations. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md) and [the orders and kitchens guide](docs/GUIDE_orders_and_kitchens.md).
+> The current build adds a day countdown, a retry screen, a food-stealing ghost, a temporary blocking guest and a vampire sweep with brief stun. The chef moves 15% faster. See [controls and gameplay](docs/FINAL_GAMEPLAY.md), [encounter rules and integration](docs/SHIFT_AND_ENEMIES.md), and [orders and kitchens](docs/GUIDE_orders_and_kitchens.md).
 
 # Restaurant game — shared team starter
 
@@ -16,8 +16,8 @@ See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.8.1.zip** from the
-[current release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.8.1).
+Download **kitchen-demo-windows-v0.10.0.zip** from the
+[current release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.10.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -28,9 +28,9 @@ repository does not change that EXE; rebuild it when you want a new app version.
 
 ## Start developing
 
-The private team repository is
+The public team repository is
 `https://github.com/toocoolqi/imaging_and-_special-effects.git`.
-Each teammate needs repository access from its owner and Python 3.12 installed.
+Python 3.12 is needed for development. Collaborator access is needed to push changes.
 Each member starts by cloning the same repository:
 
 ```powershell
@@ -57,8 +57,10 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 | WASD / arrows | Move, with equal straight and diagonal speed |
 | E | Use the nearest station once within 64 pixels |
 | E at the service hatch | Serve the carried plate, or a sandwich or milk in hand |
+| E near a ghost | Recover its stolen food or banish it before it steals |
 | Q | Remove the newest plated food into empty hands |
 | Enter | Advance after reaching the day's gold target and returning the plate |
+| Enter / R after failure | Retry the same kitchen; earlier days' gold is kept |
 | 1 - 4 | Jump to a day (starts it fresh) |
 | M | Mute/unmute |
 | P | Pause/resume |

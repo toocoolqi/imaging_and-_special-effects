@@ -210,3 +210,25 @@ class IngredientSystem:
     def reset(self) -> None:
         """Start a new session, including restarting the plate revision at zero."""
         self._state = _IngredientState()
+
+    def steal_docked_food(self) -> tuple[FoodId, ...]:
+        """Move food to a ghost; never take the plate or food in the chef's hands."""
+        state = self._state
+        if state._location is not PlateLocation.DOCKED or not state._plate:
+            return ()
+        food = tuple(state._plate)
+        state._plate.clear()
+        state._revision += 1
+        return food
+
+    def restore_stolen_food(self, food: tuple[FoodId, ...]) -> ActionResult:
+        """Recover the complete payload atomically, without duplicating or losing food."""
+        if any(item not in (*_VALID_INGREDIENTS, "chopped_tomato", POT_RECIPE.dish) for item in food):
+            raise ValueError("Unknown stolen food")
+        combined = (*self._state._plate, *food)
+        if len(combined) > PLATE_CAPACITY or (POT_RECIPE.dish in combined and len(combined) > 1):
+            return ActionResult(False, "Make room on the plate, then catch the ghost with E.")
+        if food:
+            self._state._plate.extend(food)
+            self._state._revision += 1
+        return ActionResult(True, "Food recovered onto the plate. Ghost banished!")

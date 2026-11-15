@@ -11,7 +11,7 @@ from restaurant.player.interaction import choose_target
 from restaurant.shared.contracts import InteractionTarget
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION
 from restaurant.shared.settings import (
-    KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, SPAWN, TARGETS, WALL_RECTANGLES,
+    KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, PLAYER_SPEED, SPAWN, TARGETS, WALL_RECTANGLES,
 )
 
 
@@ -56,7 +56,7 @@ def test_movement_animation_idle(direction, axis, sign):
     chef.update(0.1, walls)
     first_walk = chef.sprite.texture
     chef.update(0.1, walls)
-    assert chef.position[axis] == pytest.approx(ANIMATION_TEST_POSITION[axis] + sign * 40, abs=0.1)
+    assert chef.position[axis] == pytest.approx(ANIMATION_TEST_POSITION[axis] + sign * PLAYER_SPEED * .2, abs=0.1)
     assert chef.sprite.texture is not first_walk
     assert chef.direction == direction
     assert chef.state == "walk"
@@ -80,7 +80,7 @@ def test_timing_diagonal_and_facing():
             chef.update(1 / rate, arcade.SpriteList())
         distances.append(math.dist((100, 100), chef.position))
         assert chef.direction == "up"
-    assert distances == pytest.approx([200, 200, 200], abs=1)
+    assert distances == pytest.approx([PLAYER_SPEED] * 3, abs=.01)
     chef.set_move_key("up", False)
     chef.update(0.1, arcade.SpriteList())
     assert chef.direction == "right"

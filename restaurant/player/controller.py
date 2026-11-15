@@ -46,8 +46,6 @@ class PlayerController:
         self._chop_frames = [self._load(f"chop_{i}.png") for i in range(4)]
         self.sprite = arcade.Sprite(self._frames["down"][0], scale=PLAYER_SCALE)
         self._hand_crops = {}
-        self._engine = None
-        self._walls = None
         self._keys: list[Direction] = []  # Press order settles diagonal facing.
         self.reset(spawn)
 
@@ -234,27 +232,47 @@ class PlayerController:
             if vx * x + vy * y > 0:
                 self._direction = key
                 break
-        if walls is not self._walls:
-            self._walls = walls
-            self._engine = arcade.PhysicsEngineSimple(self.sprite, walls)
-
         # Bound a stalled frame to 0.25 seconds to avoid a teleport after a pause.
         # Each physics step travels <= 2 pixels, including at thin counter edges.
         dt = min(delta_time, 0.25)
         steps = max(1, ceil(PLAYER_SPEED * dt / 2))
-        travelled = 0.0
+        start = self.position
         for _ in range(steps):
-            before = self.position
-            self.sprite.change_x = x * PLAYER_SPEED * dt / steps
-            self.sprite.change_y = y * PLAYER_SPEED * dt / steps
             if x or y:
-                self._engine.update()
+                self._move_axis(0, x * PLAYER_SPEED * dt / steps, walls)
+                self._move_axis(1, y * PLAYER_SPEED * dt / steps, walls)
                 self._clamp_to_kitchen()
-            travelled += hypot(self.position[0] - before[0], self.position[1] - before[1])
         self.sprite.change_x = self.sprite.change_y = 0.0
-        self.is_moving = travelled > 0.001
+        self.is_moving = hypot(self.position[0] - start[0], self.position[1] - start[1]) > 0.01
         if not self.is_moving or previous_direction != self._direction:
             self._animation_time = 0.0
         if self.is_moving:
             self._animation_time += dt
         self._set_frame()
+
+    def _move_axis(self, axis, amount, walls):
+        """Use Arcade's hit boxes with subpixel stopping and wall sliding.
+
+        PhysicsEngineSimple resolves vertical overlaps in whole/quarter pixels.
+        At a fractional movement speed that can bounce the feet every frame.
+        These tiny bounded steps instead stop at the last noncolliding position.
+        """
+        if not amount:
+            return
+        start = list(self.position)
+        end = start.copy()
+        end[axis] += amount
+        self.sprite.position = tuple(end)
+        if not arcade.check_for_collision_with_list(self.sprite, walls):
+            return
+        low, high = 0.0, 1.0
+        for _ in range(10):
+            mid = (low + high) / 2
+            end[axis] = start[axis] + amount * mid
+            self.sprite.position = tuple(end)
+            if arcade.check_for_collision_with_list(self.sprite, walls):
+                high = mid
+            else:
+                low = mid
+        end[axis] = start[axis] + amount * low
+        self.sprite.position = tuple(end)

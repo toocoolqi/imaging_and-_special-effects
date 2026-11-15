@@ -7,6 +7,7 @@ import arcade
 
 from restaurant.game_view import create_window
 from restaurant.display import window_geometry
+from restaurant.hazards.navigation import routes_open
 from restaurant.ingredients.chopping import CHOP_SECONDS
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION, PROPS
 from restaurant.kitchen.days import DAYS
@@ -286,6 +287,99 @@ def run_packaged_check(output: Path) -> int:
             view.on_draw()
             arcade.get_image().save(output / "collision-guide.png")
             view.debug = False
+            # Exercise new encounters through the same controller/inventory as
+            # the playable app; these checks also run inside the portable EXE.
+            view.go_to_day(0)
+            view.fade = view.banner = 0
+            view.ingredients.collect("sandwich")
+            view.ingredients.add_to_plate()
+            view.orders.reset(rules=DayRules(target_gold=999, patience_seconds=.2,
+                                            arrival_seconds=.05, recipe_ids=("milk",)))
+            view.on_update(.3)
+            view.on_update(.05)
+            check(view.encounters.ghost is not None and view.encounters.ghost.state == "warning",
+                  "Two expired live orders trigger a ghost warning")
+            view.orders.reset(rules=view.day.rules)
+            for _ in range(160):
+                view.on_update(.05)
+                if view.encounters.ghost and view.encounters.ghost.food:
+                    break
+            ghost = view.encounters.ghost
+            check(ghost is not None and ghost.food == ("sandwich",)
+                  and view.ingredients.snapshot().plate.ingredients == (),
+                  "Ghost steals food from a docked plate")
+            view.player.reset((ghost.x - 50, ghost.y - 12))
+            view.on_draw()
+            arcade.get_image().save(output / "ghost-theft.png")
+            press(arcade.key.E)
+            check(view.encounters.ghost is None
+                  and view.ingredients.snapshot().plate.ingredients == ("sandwich",),
+                  "E reclaims stolen food and banishes the ghost")
+
+            view.go_to_day(2)
+            view.fade = view.banner = 0
+            view.encounters.misses = 2
+            view.on_update(.01)
+            check(view.encounters.blocker is not None and view._blocker_wall is None,
+                  "Hard-day guest warns before becoming solid")
+            view.on_update(2.1)
+            check(view._blocker_wall in view.walls
+                  and routes_open(view.day.walls, view.encounters.stations,
+                                  view.player.ground_position, view.encounters.blocker_rectangle),
+                  "Solid guest preserves a route to every station")
+            view.on_key_press(arcade.key.W, 0)
+            for _ in range(20):
+                view.on_update(.03)
+            view.on_key_release(arcade.key.W, 0)
+            check(view.player.ground_position[1] <= view._blocker_wall.bottom - 10
+                  and not arcade.check_for_collision_with_list(view.player.sprite, view.walls),
+                  "Guest collision stops the chef without penetration")
+            view.player.reset((590, 267))
+            view.on_draw()
+            arcade.get_image().save(output / "blocking-guest.png")
+
+            view.go_to_day(1)
+            view.fade = view.banner = 0
+            view.player.reset((480, 242))
+            view.encounters.next_vampire = 0
+            view.on_update(.01)
+            check(view.encounters.vampire.state == "warning" and not view.encounters.stun,
+                  "Vampire announces its lane before sweeping")
+            view.on_draw()
+            arcade.get_image().save(output / "vampire-warning.png")
+            for _ in range(140):
+                view.on_update(.025)
+                if view.encounters.stun:
+                    break
+            check(view.encounters.stun > 0 and "vampire_bite" in view.audio.history,
+                  "Vampire bite triggers brief stun and its sound")
+            view.on_draw()
+            arcade.get_image().save(output / "vampire-stun.png")
+            before = view.player.position
+            view.on_key_press(arcade.key.D, 0)
+            view.on_update(.1)
+            check(view.player.position == before, "Chef cannot move during stun")
+            view.on_update(.8)
+            check(view.encounters.stun == 0 and view.player.position[0] > before[0],
+                  "Held movement resumes when stun ends")
+            view.clear_input()
+            left = view.shift_remaining
+            press(arcade.key.P)
+            view.on_update(8)
+            check(view.shift_remaining == left, "Pause freezes the day deadline")
+            press(arcade.key.P)
+
+            view.go_to_day(3)
+            view.fade = view.banner = 0
+            view.shift_remaining = .03
+            view.on_update(.04)
+            check(view.failed and view.shift_remaining == 0, "Missing the gold target at the deadline fails the shift")
+            view.on_draw()
+            arcade.get_image().save(output / "shift-failed.png")
+            press(arcade.key.ENTER)
+            check(not view.failed and view.day_index == 3 and view.shift_remaining == 135,
+                  "Enter retries the same day with a fresh timer")
+            view.fade = view.banner = 0
             window.set_size(800, 600)
             view.on_draw()
             viewport = view.camera.viewport

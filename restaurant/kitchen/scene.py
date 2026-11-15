@@ -162,13 +162,19 @@ class KitchenScene:
                                            prop.y + 8 + phase * 20, 1 + phase * 2,
                                            (219, 246, 252, int(220 * (1 - phase))), 1)
 
-    def draw_props(self, player, _players, state=None, chopping=None):
+    def draw_props(self, player, _players, state=None, chopping=None, extra_actors=()):
         foot_y = player.ground_position[1]
         if chopping is not None and chopping.state == "chopping":
             # The chef works at the left edge. The reaching hand and knife
             # are above this worktop even though the feet sit beside its base.
             foot_y = min(foot_y, self.props["chopping_table"].depth_y - 1)
-        for prop_id in self.draw_order(foot_y):
+        entries = [(prop.depth_y, prop.prop_id) for prop in self.props.values()]
+        entries.append((foot_y, "player"))
+        entries.extend((depth, f"actor_{i}") for i, (depth, _) in enumerate(extra_actors))
+        for _, prop_id in sorted(entries, reverse=True):
+            if prop_id.startswith("actor_"):
+                extra_actors[int(prop_id[6:])][1]()
+                continue
             if prop_id == "player":
                 held = state.held if state is not None else None
                 hand = player.hand_anchor if held else None

@@ -41,6 +41,7 @@ class KitchenDay:
     # Floor/wall points used by BOTH the artwork (puddles, broken panels) and
     # the runtime ambience (water drips, sparks). Never solid.
     effect_points: tuple = ()
+    shift_seconds: float = 180.0
 
     @property
     def map_id(self) -> str:
@@ -82,21 +83,23 @@ DAYS = (
         headline="A forgotten kitchen",
         story="You left the office for good and took over an abandoned restaurant. "
               "Earn 150 gold to restore it.",
-        rules=DayRules(150, patience_seconds=90.0, arrival_seconds=14.0, recipe_ids=EASY),
+        rules=DayRules(150, patience_seconds=82.0, arrival_seconds=14.0, recipe_ids=EASY),
         effect_points=((150, 260), (500, 540), (845, 330))),
     kitchen_day(
         "Warm Kitchen", "warm",
         headline="Grand reopening",
         story="Yesterday's gold paid for the repairs. Word is out and customers are "
               "arriving faster: earn 220 gold.",
-        rules=DayRules(220, patience_seconds=75.0, arrival_seconds=11.0, recipe_ids=WITH_PASTA)),
+        shift_seconds=165.0,
+        rules=DayRules(220, patience_seconds=68.0, arrival_seconds=11.0, recipe_ids=WITH_PASTA)),
     kitchen_day(
         "Damaged Silver Kitchen", "metal_damaged",
         headline="A second kitchen",
         story="You bought a run-down steel kitchen across town. Customers are impatient: "
               "earn 290 gold to renovate it.",
         music="bgm_metal",
-        rules=DayRules(290, patience_seconds=62.0, arrival_seconds=9.0, recipe_ids=FULL_MENU),
+        shift_seconds=150.0,
+        rules=DayRules(290, patience_seconds=56.0, arrival_seconds=9.0, recipe_ids=FULL_MENU),
         effect_points=((247, 640), (599, 640))),
     kitchen_day(
         "Silver Kitchen", "metal",
@@ -104,5 +107,6 @@ DAYS = (
         story="Rust gone, steel polished, and the rush never stops. Serve fast to finish "
               "your journey: earn 360 gold.",
         music="bgm_metal",
-        rules=DayRules(360, patience_seconds=50.0, arrival_seconds=7.5, recipe_ids=FULL_MENU)),
+        shift_seconds=135.0,
+        rules=DayRules(360, patience_seconds=45.0, arrival_seconds=7.5, recipe_ids=FULL_MENU)),
 )

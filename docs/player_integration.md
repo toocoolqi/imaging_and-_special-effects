@@ -102,8 +102,9 @@ somewhere visible. Reset/pause must eventually cover all systems together.
   sprite center. It stays identical across animations. F1 shows it. The chef
   center remains the interaction origin. Furniture uses its measured base,
   while drawing order uses feet so raised counters can occlude the chef.
-- Motion uses 200 pixels per second, normalized diagonals, and Arcade's
-  PhysicsEngineSimple with steps no longer than 2 pixels to prevent tunneling.
+- Motion uses 230 pixels per second, normalized diagonals and Arcade hit-box
+  checks in steps no longer than 2 pixels. Each axis stops at the last free
+  subpixel position, preserving wall sliding without vertical collision jitter.
   A stalled update consumes at most 0.25 seconds of movement/animation; excess
   time is intentionally discarded. Normal update rates retain equal speed.
 - Collision uses actual displacement to choose walk versus idle. Pressing into

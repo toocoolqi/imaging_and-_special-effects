@@ -98,7 +98,7 @@ The chef moves around the kitchen, collects one ingredient at a time, adds ingre
 
 Use these fixed rules until a reviewed change is agreed:
 - Window: 1200 × 720. Kitchen: x=0–899. Sidebar: x=900–1199. World coordinates use pixels.
-- Chef speed: 200 pixels/second. WASD and arrow keys move. Diagonal movement is normalized so it is not faster.
+- Chef speed: 230 pixels/second. WASD and arrow keys move. Diagonal movement is normalized so it is not faster.
 - E performs one nearby interaction per key press; holding E does not repeat. Q removes the most recently added ingredient at the plate station. Removal is allowed only when the chef's hand is empty and transfers that ingredient into the hand.
 - One chef, one held ingredient, one stationary plate with capacity 4. No carried plate or inventory menu.
 - Ingredient IDs: `sandwich`, `tomato`, `noodles`, `milk`. Boxes have unlimited stock. IDs are lowercase strings; display names and images are separate.

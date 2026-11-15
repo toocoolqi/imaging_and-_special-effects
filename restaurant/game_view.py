@@ -6,12 +6,14 @@ press to one system method, turn order events into effects and sound, then
 draw everything from snapshots. One GameView serves all four days.
 """
 from collections import deque
-from math import ceil
+from math import ceil, isfinite
 
 import arcade
 
 from restaurant.audio import KitchenAudio
 from restaurant.display import artwork_viewport, fit_window
+from restaurant.hazards.system import Encounters
+from restaurant.hazards.renderer import EncounterArt
 from restaurant.kitchen.ambience import KitchenAmbience
 from restaurant.kitchen.days import DAYS
 from restaurant.kitchen.scene import KitchenScene
@@ -96,6 +98,7 @@ class GameView(arcade.View):
         self.effects = OrderEffects(seed)
         self.audio = KitchenAudio()
         self.audio.muted = not audio_enabled
+        self.encounter_art = EncounterArt()
         self._scenes = {}                 # each kitchen's artwork loads once
         self.day_index = 0
         self.total_gold = 0
@@ -135,6 +138,15 @@ class GameView(arcade.View):
         self.ingredients.reset()
         self.chopping.reset()
         self.orders.reset(rules=self.day.rules)
+        self.shift_remaining = self.day.shift_seconds
+        self.failed = False
+        self._day_start_gold = self.total_gold
+        plate = next(prop for prop in self.day.props if prop.prop_id == "display_plate")
+        self.encounters = Encounters(self.day_index, self.day.walls,
+            tuple((t.x, t.y - 32) for t in self.targets), (plate.x, plate.y - 62))
+        self._blocker_wall = None
+        self._was_stunned = False
+        self._last_shift_tick = None
         self.sidebar.reset()
         self.effects.reset()
         self.outgoing = ()
@@ -142,7 +154,7 @@ class GameView(arcade.View):
         self.selected = None
         self.banner = BANNER_SECONDS
         self._last_tick = None
-        self.message = "Orders are coming in, and each timer starts straight away."
+        self.message = "Reach the gold target before the shift ends. Two missed orders attract a hungry ghost."
         self.audio.start_music(self.day.music)
 
     def advance_day(self):
@@ -185,7 +197,7 @@ class GameView(arcade.View):
         self.pressed.add(symbol)
         if symbol == arcade.key.ESCAPE:
             self.window.close()
-        elif symbol == arcade.key.P:
+        elif symbol == arcade.key.P and not self.failed:
             self.paused = not self.paused
             self.clear_input()
             self.pressed.add(symbol)
@@ -195,21 +207,27 @@ class GameView(arcade.View):
             self.audio.muted = not self.audio.muted
             self.sync_audio()
         elif symbol == arcade.key.ENTER:
-            self.advance_day()
+            if self.failed:
+                self.retry_day()
+            else:
+                self.advance_day()
             self.pressed.add(symbol)
         elif symbol == arcade.key.R:
-            self.reset()
+            if self.failed:
+                self.retry_day()
+            else:
+                self.reset()
             self.pressed.add(symbol)
         elif symbol == arcade.key.F1:
             self.debug = not self.debug
         elif symbol in DAY_KEYS:
             self.go_to_day(DAY_KEYS[symbol])
             self.pressed.add(symbol)
-        elif not self.paused and not self.finished:
+        elif not self.paused and not self.finished and not self.failed:
             if symbol in MOVE_KEYS:
-                if self.chopping.state != "chopping":
+                if self.chopping.state != "chopping" and not self.encounters.stun:
                     self.player.set_move_key(MOVE_KEYS[symbol], True)
-            elif symbol in (arcade.key.E, arcade.key.Q):
+            elif symbol in (arcade.key.E, arcade.key.Q) and not self.encounters.stun:
                 self.actions.append("interact" if symbol == arcade.key.E else "remove")
 
     def on_key_release(self, symbol, modifiers):
@@ -218,7 +236,58 @@ class GameView(arcade.View):
             direction = MOVE_KEYS[symbol]
             # W and Up can both be held. Releasing one must not release the other.
             still_held = any(MOVE_KEYS.get(key) == direction for key in self.pressed)
-            self.player.set_move_key(direction, still_held and self.chopping.state != "chopping")
+            self.player.set_move_key(direction, still_held and self.chopping.state != "chopping"
+                                     and not self.encounters.stun and not self.failed)
+
+    def retry_day(self):
+        """Retry this kitchen without keeping gold earned during the failed attempt."""
+        self.total_gold = self._day_start_gold
+        self.paused = self.finished = False
+        self.load_day()
+        self.fade = FADE_SECONDS
+
+    def fail_shift(self):
+        self.failed = True
+        self.shift_remaining = 0.0
+        self.clear_input()
+        self.encounters.clear()
+        self.sync_blocker()
+        self.player.set_visual_state(chopping=False)
+        self.message = "Shift over. Press Enter to retry this day."
+        self.audio.stop_all()
+        self.audio.play("shift_fail")
+
+    def sync_blocker(self):
+        rectangle = self.encounters.blocker_rectangle
+        if rectangle is None and self._blocker_wall is not None:
+            self.walls.remove(self._blocker_wall)
+            self._blocker_wall = None
+        elif rectangle is not None and self._blocker_wall is None:
+            x, y, width, height = rectangle
+            self._blocker_wall = arcade.SpriteSolidColor(width, height, x, y)
+            self.walls.append(self._blocker_wall)
+
+    def handle_encounter_events(self):
+        for cue, message in self.encounters.drain_events():
+            self.audio.play(cue)
+            self.message = message
+
+    def update_encounters(self, dt):
+        if self.day_complete:
+            self.encounters.clear()
+        else:
+            self.encounters.update(dt, self.ingredients, self.player.ground_position)
+        self.sync_blocker()
+        stunned = self.encounters.stun > 0
+        if stunned:
+            self.player.clear_input()
+            self.actions.clear()
+        elif self._was_stunned and self.chopping.state != "chopping":
+            for key in self.pressed:
+                if key in MOVE_KEYS:
+                    self.player.set_move_key(MOVE_KEYS[key], True)
+        self._was_stunned = stunned
+        self.handle_encounter_events()
 
     def reset(self):
         self.day_index = 0
@@ -229,16 +298,32 @@ class GameView(arcade.View):
         self.load_day()
 
     def on_update(self, delta_time):
+        if not isfinite(delta_time) or delta_time < 0:
+            raise ValueError("Frame time must be finite and nonnegative")
         if self.paused:
             return
         self.fade = max(0.0, self.fade - delta_time)
         self.effects.update(delta_time)
-        if self.finished:
+        if self.finished or self.failed:
             return
+        # The shift deadline takes priority over actions queued in this frame.
+        # Once the target is earned, time and encounters stop while the chef
+        # returns the plate and closes the day.
+        if not self.day_complete:
+            self.shift_remaining = max(0.0, self.shift_remaining - delta_time)
+            if self.shift_remaining == 0:
+                self.fail_shift()
+                return
+            second = ceil(self.shift_remaining)
+            if second <= 15 and second != self._last_shift_tick:
+                self.audio.play("timer_tick")
+            self._last_shift_tick = second
         self.banner = max(0.0, self.banner - delta_time)
-        self.player.update(delta_time, self.walls)
+        self.update_encounters(delta_time)
+        if not self.encounters.stun:
+            self.player.update(delta_time, self.walls)
         self.ingredients.update(delta_time)
-        if self.chopping.update(delta_time):
+        if self.chopping.update(0 if self.encounters.stun else delta_time):
             self.message = "Tomato chopped. Press E at the board to collect it."
             self.audio.play("plate")
         # Timers before actions: an order that expires this frame cannot be served.
@@ -247,9 +332,10 @@ class GameView(arcade.View):
         self.selected = choose_target(self.player.position, self.targets)
         while self.actions:
             action = self.actions.popleft()
-            if self.chopping.state != "chopping":
+            if self.chopping.state != "chopping" and not self.encounters.stun:
                 self.handle_interaction(action, self.selected)
         self.handle_order_events()
+        self.handle_encounter_events()
         self.warn_when_time_is_short()
         self.sidebar.update(delta_time, self.orders.snapshot(), self.orders.stats())
         self.ambience.update(delta_time)
@@ -262,7 +348,7 @@ class GameView(arcade.View):
         self.sync_audio()
 
     def sync_audio(self):
-        playing = not self.paused and not self.finished
+        playing = not self.paused and not self.finished and not self.failed
         self.audio.sync_bubble(playing and self.ingredients.snapshot().pot.stage is PotStage.COOKING)
         self.audio.sync_music(playing)
 
@@ -282,7 +368,10 @@ class GameView(arcade.View):
                 self.audio.play("order_expired")
                 self.effects.expired(*HATCH)
                 self.message = f"Order #{event.order_id} ({event.recipe_name}) expired. No gold."
+                self.encounters.missed_order()
             elif event.kind == "day_complete":
+                self.encounters.clear()
+                self.sync_blocker()
                 self.audio.play("day_complete")
                 self.effects.celebrate(KITCHEN_WIDTH, KITCHEN_HEIGHT)
                 self.message = "Day complete! Return the plate, then press Enter."
@@ -292,7 +381,7 @@ class GameView(arcade.View):
         urgent = [order.remaining_seconds for order in self.orders.snapshot()
                   if order.status == "accepted" and order.remaining_seconds <= LOW_TIME]
         second = ceil(min(urgent)) if urgent else None
-        if second is not None and second != self._last_tick:
+        if second is not None and second != self._last_tick and self.shift_remaining > 15:
             self.audio.play("timer_tick")
         self._last_tick = second
 
@@ -316,6 +405,11 @@ class GameView(arcade.View):
 
     def handle_interaction(self, action, target):
         """Compose task 2 through its public methods; player owns no food state."""
+        if self.failed or self.encounters.stun:
+            return
+        if action == "interact" and self.encounters.reclaim(self.ingredients, self.player.ground_position) is not None:
+            self.handle_encounter_events()
+            return                  # one E press cannot also use a station
         if target is None:
             self.message = "Move closer to a station marker."
             self.audio.play("reject")
@@ -427,6 +521,7 @@ class GameView(arcade.View):
                                                 0, self.window.height * ratio)
         self.kitchen.draw_floor()
         self.ambience.draw_floor_layer()
+        self.encounter_art.floor(self.encounters, self.text)
         foot_x, foot_y = self.player.ground_position
         arcade.draw_ellipse_filled(foot_x, foot_y - 8, 48, 12, (65, 61, 48, 85))
         for target in self.targets:
@@ -438,7 +533,10 @@ class GameView(arcade.View):
                 self.text("prompt_" + target.target_id, "E", target.x, target.y - 62,
                           14, (34, 72, 60), anchor_x="center")
         state = self.ingredients.snapshot()
-        self.kitchen.draw_props(self.player, self.players, state, self.chopping)
+        blocker = self.encounters.blocker
+        actors = ((blocker.y - 16, lambda: self.encounter_art.blocker(self.encounters)),) if self.encounters.blocker_rectangle else ()
+        self.kitchen.draw_props(self.player, self.players, state, self.chopping, actors)
+        self.encounter_art.air(self.encounters, self.player, self.kitchen, self.text)
         if self.chopping.state == "chopping":
             art = self.kitchen.board_art
             if art is not None:
@@ -450,7 +548,7 @@ class GameView(arcade.View):
             for index, food in enumerate(self.outgoing):
                 self.kitchen.draw_food(food, 744 + (index - (len(self.outgoing) - 1) / 2) * 29,
                           558 + progress * 45, 24 * (1 - 0.5 * progress))
-        self.effects.draw_hatch_call(*HATCH, not self.day_complete and not self.finished)
+        self.effects.draw_hatch_call(*HATCH, not self.day_complete and not self.finished and not self.failed)
         self.ambience.draw_air_layer()
         self.text("pass_label", "SERVICE  /  DINING ROOM", 744, 672, 9,
                   (244, 224, 172), anchor_x="center")
@@ -459,6 +557,8 @@ class GameView(arcade.View):
             for x, y, width, height in self.day.walls:
                 arcade.draw_rect_outline(arcade.XYWH(x, y, width, height),
                                          (249, 96, 87), 2)
+            if self.encounters.blocker_rectangle:
+                arcade.draw_rect_outline(arcade.XYWH(*self.encounters.blocker_rectangle), GOLD, 2)
             self.players.draw_hit_boxes(color=(237, 80, 80), line_thickness=2)
             for target in self.targets:
                 arcade.draw_circle_outline(target.x, target.y, 64, (80, 140, 130), 1)
@@ -479,7 +579,16 @@ class GameView(arcade.View):
                                           WINDOW_WIDTH - KITCHEN_WIDTH, 26, (18, 28, 34))
         self.text("day", f"Day {self.day_index + 1}/{len(DAYS)} · {self.day.name}",
                   x, WINDOW_HEIGHT - 20, 11, ACCENT)
-        self.text("headline", self.day.headline, x, WINDOW_HEIGHT - 58, 15, INK, bold=True)
+        # The clock occupies the existing header gap above the order panel.
+        urgent = self.shift_remaining <= 30 and not self.day_complete
+        clock_color = (249, 133, 113) if urgent else GOLD
+        minutes, seconds = divmod(ceil(self.shift_remaining), 60)
+        self.text("headline", "SHIFT ENDED" if self.failed else "TARGET REACHED" if self.day_complete else "SHIFT LEFT",
+                  x, 647, 10, ACCENT if self.day_complete else INK, bold=True)
+        self.text("shift_clock", f"{minutes}:{seconds:02}", x + 224, 642, 23,
+                  clock_color, anchor_x="right", bold=True)
+        arcade.draw_lbwh_rectangle_filled(x, 631, 224, 4, (57, 72, 75))
+        arcade.draw_lbwh_rectangle_filled(x, 631, 224 * self.shift_remaining / self.day.shift_seconds, 4, clock_color)
         self.sidebar.draw(self.orders.snapshot(), self.orders.stats(), self.text,
                           "Kitchen closed. Well done!" if self.day_complete else "Waiting for customers...")
         hand = "plate" if state.plate.location is PlateLocation.CARRIED else (state.held or "empty").replace("_", " ")
@@ -492,6 +601,10 @@ class GameView(arcade.View):
         nearby = station_hint(self.selected, state) if self.selected else "Move near a station"
         if self.chopping.state == "chopping":
             nearby = "Chopping tomato"
+        if self.encounters.stun:
+            nearby = "Stunned - just a moment"
+        elif self.encounters.ghost_in_reach(self.player.ground_position):
+            nearby = "E · Catch the ghost"
         elif self.day_complete:
             nearby = "Return the plate · Enter"
         self.text("nearby", nearby, x, 186, 11, INK)
@@ -503,7 +616,7 @@ class GameView(arcade.View):
 
     def draw_overlays(self):
         cx, cy = KITCHEN_WIDTH / 2, KITCHEN_HEIGHT / 2
-        if self.banner and not self.paused and not self.finished and not self.day_complete:
+        if self.banner and not self.paused and not self.finished and not self.day_complete and not self.failed:
             fade = min(1.0, self.banner / 0.8, (BANNER_SECONDS - self.banner) / 0.4 + 0.2)
             alpha = int(255 * max(0.0, fade))
             # Low in the room so the hatch and its "!" call stay visible.
@@ -525,7 +638,16 @@ class GameView(arcade.View):
             blink = int(self.effects.elapsed * 2.5) % 2 == 0
             self.text("done_key", "Return the plate, then press ENTER", cx, 214, 13,
                       ACCENT if blink else MUTED, anchor_x="center", bold=True)
-        if self.finished:
+        if self.failed:
+            arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT, (20, 25, 34, 205))
+            arcade.draw_lbwh_rectangle_filled(cx - 255, cy - 112, 510, 224, (193, 113, 91))
+            arcade.draw_lbwh_rectangle_filled(cx - 251, cy - 108, 502, 216, (24, 37, 44))
+            self.text("fail_heading", "SHIFT OVER", cx, cy + 54, 30, (249, 133, 113), anchor_x="center", bold=True)
+            self.text("fail_score", f"Earned {self.orders.stats().score} / {self.day.rules.target_gold} gold", cx, cy + 12,
+                      18, GOLD, anchor_x="center")
+            self.text("fail_story", "The day's target was not reached in time.", cx, cy - 22, 14, INK, anchor_x="center")
+            self.text("fail_retry", "ENTER / R  -  Retry this kitchen", cx, cy - 70, 16, ACCENT, anchor_x="center", bold=True)
+        elif self.finished:
             arcade.draw_lbwh_rectangle_filled(0, 0, KITCHEN_WIDTH, KITCHEN_HEIGHT,
                                               (20, 30, 40, 220))
             self.effects.draw(self.text, None)          # confetti over the ending
