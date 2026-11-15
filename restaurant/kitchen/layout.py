@@ -1,7 +1,7 @@
 """Visible furniture and measured floor footprints, in world pixels.
 
-Pictures include raised surfaces. Solids cover their bases on the floor,
-without an invisible buffer around the picture.
+Pictures include raised surfaces. Solids cover their bases on the floor.
+Fixed worktops extend to the rear wall so their service space stays in front.
 """
 from dataclasses import dataclass
 
@@ -24,6 +24,7 @@ class KitchenProp:
     # Local (x, y, width, height) of the base; None for tabletop decorations.
     footprint: tuple[int, int, int, int] | None = None
     support: str | None = None
+    fixed_to_back_wall: bool = False
 
     @property
     def solid(self):
@@ -38,7 +39,13 @@ class KitchenProp:
         if self.footprint is None:
             raise ValueError(f"{self.prop_id} is supported by other furniture")
         dx, dy, width, height = self.footprint
-        return self.x + dx, self.y + dy, width, height
+        center_y = self.y + dy
+        if self.fixed_to_back_wall:
+            # Preserve the front approach and close the gap to the backsplash.
+            front = center_y - height / 2
+            height = max(height, FLOOR_TOP - front)
+            center_y = front + height / 2
+        return self.x + dx, center_y, width, height
 
     @property
     def depth_y(self):
@@ -54,9 +61,12 @@ PROPS = (
     KitchenProp("crate_4", "crate_milk", 370, 104, 70, 90, (0, -20, 60, 46)),
     KitchenProp("plate_counter", "table", 620, 350, 180, 110, (0, -21, 164, 62)),
     KitchenProp("chopping_table", "table", 300, 350, 180, 110, (0, -21, 164, 62)),
-    KitchenProp("serving_table", "pass_counter", 744, 526, 256, 90, (0, -22, 240, 40)),
-    KitchenProp("wash_counter", "sink", 132, 526, 210, 98, (0, -28, 196, 40)),
-    KitchenProp("floor_stove", "stove", 332, 526, 124, 119, (0, -21, 110, 70)),
+    KitchenProp("serving_table", "pass_counter", 744, 526, 256, 90, (0, -22, 240, 40),
+                fixed_to_back_wall=True),
+    KitchenProp("wash_counter", "sink", 132, 526, 210, 98, (0, -28, 196, 40),
+                fixed_to_back_wall=True),
+    KitchenProp("floor_stove", "stove", 332, 526, 124, 119, (0, -21, 110, 70),
+                fixed_to_back_wall=True),
     KitchenProp("floor_bin", "bin", 886, 112, 50, 70, (0, -17, 42, 32)),
     KitchenProp("chopping_board", "clean_board", 260, 373, 76, 35, support="chopping_table"),
     KitchenProp("display_plate", "plate", 620, 381, 66, 45, support="plate_counter"),

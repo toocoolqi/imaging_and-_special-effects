@@ -3,12 +3,17 @@
 Classic Chef is a four-day restaurant game. Run `python main.py` after installing
 `requirements.txt`. On Windows, the playable ZIP includes Python and Arcade.
 
+The app starts at the main menu. Click **Play** or press **Enter** to open the
+first kitchen. Click **Quit** or press **Esc** to leave the menu.
+
 Move with WASD or the arrow keys. Press E at the service hatch to open service,
 then read the order cards. E at the plate island picks up the plate even when it
 is empty. Press E at a pantry box while carrying the plate to add the ingredient
 directly, or collect a single ingredient by hand and put it on the docked plate.
 The chef holds the plate in his hands and has walking and standing poses in
 all four directions.
+Single ingredients lift into the palm when picked up and follow the moving
+hand. Fingers overlap the food, and the chef's body hides it when facing away.
 
 - Tomato sandwich uses one sandwich and one tomato. To chop the tomato, bring
   it by hand or on the plate and press E at the board. The chef cuts it for a
@@ -41,3 +46,8 @@ Run `python -m pytest -q` and `python main.py --self-test artifacts/check` on a
 Windows desktop. The game uses a local graphics context. The full playthrough
 test exercises chopping, carrying, cooking, serving and plate return across all
 four days.
+
+Art and the chef use a shared pixel grid; labels remain clear at screen
+resolution. The window accounts for Windows scaling and stays within the
+desktop. Fixed wall equipment cannot be approached from behind. The center
+islands still allow natural walking and overlap around their sides and backs.

@@ -5,6 +5,7 @@ pixels. Desktop work-area dimensions are physical pixels. Never compare those
 two sizes without applying the window's DPI scale.
 """
 import sys
+from math import ceil
 
 import arcade
 
@@ -38,8 +39,12 @@ def work_area(window):
 
 
 def fitted_window_size(width, height, dpi_scale=1.0):
-    """Prefer 1040 logical pixels wide, retaining aspect ratio and frame margins."""
-    scale = min(1040 / WINDOW_WIDTH,
+    """Prefer a native 1216-pixel scene, retaining desktop and frame margins."""
+    preferred = ceil(WINDOW_WIDTH / dpi_scale), ceil(WINDOW_HEIGHT / dpi_scale)
+    if (preferred[0] * dpi_scale <= width - 64
+            and preferred[1] * dpi_scale <= height - 100):
+        return preferred
+    scale = min(1.0 / dpi_scale,
                 max(1, width - 64) / (WINDOW_WIDTH * dpi_scale),
                 max(1, height - 100) / (WINDOW_HEIGHT * dpi_scale))
     return max(1, int(WINDOW_WIDTH * scale)), max(1, int(WINDOW_HEIGHT * scale))
@@ -60,6 +65,24 @@ def fit_window(window):
     pixels_w, pixels_h = window.get_framebuffer_size()
     window.set_location(left + (width - pixels_w) // 2,
                         top + (height - pixels_h) // 2)
+
+
+def artwork_viewport(window):
+    """Logical viewport with exact pixel scaling when it fits comfortably.
+
+    Smaller screens still show the whole room. Nearest sampling keeps edges
+    sharp there, although some pixels must occupy a different width.
+    """
+    width, height = window.get_framebuffer_size()
+    viewport = scene_viewport(width, height)
+    scale = min(width / (WINDOW_WIDTH / 2), height / (WINDOW_HEIGHT / 2))
+    whole = int(scale)
+    if whole >= 2 and whole / scale >= .88:
+        art_width, art_height = WINDOW_WIDTH // 2 * whole, WINDOW_HEIGHT // 2 * whole
+        viewport = arcade.LBWH((width - art_width) // 2, (height - art_height) // 2,
+                               art_width, art_height)
+    ratio = window.get_pixel_ratio()
+    return arcade.LBWH(*(value / ratio for value in viewport.lbwh))
 
 
 def window_geometry(window):

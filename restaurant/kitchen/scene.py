@@ -7,6 +7,7 @@ import arcade
 from restaurant.ingredients.models import POT_RECIPE
 from restaurant.kitchen.details import room_details
 from restaurant.kitchen.layout import PROPS, WALL_ART
+from restaurant.pixel_art import draw_pixel_texture
 from restaurant.shared.contracts import PlateLocation, PotStage
 
 ASSET_DIR = Path(__file__).resolve().parents[2] / "assets" / "kitchen"
@@ -47,8 +48,8 @@ def load_textures(props=PROPS):
 
 def draw_icon(texture, x, y, size):
     scale = size / max(texture.width, texture.height)
-    arcade.draw_texture_rect(texture, arcade.XYWH(x, y, texture.width * scale,
-                                                  texture.height * scale), pixelated=False)
+    draw_pixel_texture(texture, arcade.XYWH(x, y, texture.width * scale,
+                                            texture.height * scale))
 
 
 def draw_tomato_pieces(x, y, size):
@@ -78,8 +79,7 @@ class KitchenScene:
     def draw_floor(self):
         self.floor.draw()
         for asset, x, y, width, height in WALL_ART:
-            arcade.draw_texture_rect(self.textures[asset], arcade.XYWH(x, y, width, height),
-                                     pixelated=False)
+            draw_pixel_texture(self.textures[asset], arcade.XYWH(x, y, width, height))
 
     def draw_order(self, foot_y):
         """Back to front, with tabletop decorations attached to their table."""
@@ -88,10 +88,7 @@ class KitchenScene:
         return [prop_id for _, prop_id in sorted(entries, reverse=True)]
 
     def draw_prop(self, prop, asset=None):
-        # Source crops are larger than their displayed size. Linear minification
-        # avoids jagged JPEG edge samples when reducing the supplied pictures.
-        arcade.draw_texture_rect(self.textures[asset or prop.asset],
-                                 arcade.XYWH(*prop.rectangle), pixelated=False)
+        draw_pixel_texture(self.textures[asset or prop.asset], arcade.XYWH(*prop.rectangle))
 
     def draw_food(self, ingredient, x, y, size):
         if ingredient == "chopped_tomato":
@@ -127,8 +124,7 @@ class KitchenScene:
                 and state.plate.location is PlateLocation.CARRIED):
             # During the chopping pose the chef has set the plate beside the board.
             plate_x = x + width * .82
-            arcade.draw_texture_rect(self.textures["plate"], arcade.XYWH(plate_x, y, 42, 29),
-                                     pixelated=False)
+            draw_pixel_texture(self.textures["plate"], arcade.XYWH(plate_x, y, 42, 29))
             self.draw_plate_food(state.plate.ingredients, plate_x, y, 12)
 
     def draw_pot(self, prop, pot):
@@ -154,16 +150,19 @@ class KitchenScene:
             foot_y = min(foot_y, self.props["chopping_table"].depth_y - 1)
         for prop_id in self.draw_order(foot_y):
             if prop_id == "player":
+                held = state.held if state is not None else None
+                hand = player.hand_anchor if held else None
+                if held and hand is not None and player.direction == "up":
+                    self.draw_food(held, *hand, player.hand_item_size)
                 player.draw()
                 if state is not None:
                     if state.plate.location is PlateLocation.CARRIED:
                         plate_anchor = player.plate_anchor
                         if plate_anchor is not None:
                             self.draw_plate_food(state.plate.ingredients, *plate_anchor, 16)
-                    elif state.held:
-                        hand_anchor = player.hand_anchor
-                        if hand_anchor is not None:
-                            self.draw_food(state.held, *hand_anchor, 25)
+                    elif held and hand is not None and player.direction != "up":
+                        self.draw_food(held, *hand, player.hand_item_size)
+                        player.draw_grip()
                 continue
             prop = self.props[prop_id]
             self.draw_prop(prop)

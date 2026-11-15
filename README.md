@@ -1,4 +1,4 @@
-> The assignment build has four playable days, Task 2 cooking and orders, and a larger chef with standing, walking, plate carrying and chopping animations. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md).
+> The assignment build has a clickable main menu, consistent pixel rendering, four playable days, Task 2 cooking and orders, and a larger chef with standing, walking, plate carrying and chopping animations. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md).
 
 # Restaurant game — shared team starter
 
@@ -16,8 +16,8 @@ See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.7.0.zip** from the
-[chef animation release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.7.0).
+Download **kitchen-demo-windows-v0.8.0.zip** from the
+[visual polish release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.8.0).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -52,6 +52,8 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 
 | Key | Action |
 | --- | --- |
+| Click Play / Enter on the menu | Start the first kitchen |
+| Click Quit / Esc on the menu | Close the app |
 | WASD / arrows | Move, with equal straight and diagonal speed |
 | E | Use the nearest station once within 64 pixels |
 | Q | Remove the newest plated food into empty hands |
@@ -65,6 +67,11 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 
 Press E at the board with a tomato in hand or on the carried plate. The chef
 chops it, then you can press E to collect the pieces.
+
+The artwork shares one pixel grid, with sharp enlargement and separately drawn
+text. The stove, sink and service hatch are fixed to the back wall; the chef can
+use their fronts but cannot walk into their rear gaps. Held food follows the
+moving hand. See [rendering and integration notes](docs/VISUAL_POLISH.md).
 
 ## Current member assignments
 

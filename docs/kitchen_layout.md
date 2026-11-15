@@ -26,12 +26,16 @@ See [Arcade's hitbox API](https://api.arcade.academy/en/3.3.3/api_docs/api/hitbo
 `KitchenProp.rectangle` describes the visible image. `footprint` is a local
 `(offset_x, offset_y, width, height)` rectangle measured around its floor base.
 `collision_rectangle` converts it to world coordinates. All floor-standing
-furniture has a footprint entirely inside its image, with no added padding.
+islands and crates have footprints inside their images, with no added padding.
+The stove, sink and service counter set `fixed_to_back_wall=True`: their
+collision rectangles extend from the measured front edge to the rear wall.
+Visible upstands connect them to the backsplash. The chef cannot enter those
+rear strips from either side, in any of the four kitchen variants.
 Raised worktops can overlap the chef's body visually; feet cannot enter bases.
 
 `KitchenScene.draw_order()` sorts furniture and the chef from back to front
 using ground positions. Decorations stay attached to their supporting table.
-This lets the chef disappear naturally behind counters and appear in front
+This lets the chef overlap naturally behind the center islands and appear in front
 when approaching their near edge. F1 shows the actual foot/base rectangles.
 The large F1 circles are interaction ranges, not collision boundaries.
 
@@ -65,10 +69,13 @@ Food IDs now match task2: sandwich, tomato, noodles, milk. Box targets are box_s
 
 ## Window, checks and packaging
 
-Startup prefers a 1040-pixel logical width and fits the height to the room's
-aspect ratio. It measures Windows display scaling and the monitor work area
+Startup prefers a 1216 x 704 physical-pixel scene (plus any DPI rounding margin).
+It measures Windows display scaling and the monitor work area
 before showing the window, leaving margins for the frame/taskbar. Resizing
-keeps the whole scene visible without stretching. Text uses the displayed size.
+keeps the whole scene visible without stretching. Art is drawn to a 608 x 352
+framebuffer and enlarged with nearest sampling. Whole-pixel scaling is used
+when it fits comfortably; small windows use a sharp fitted fallback. Text is
+drawn separately at its final physical size. See [visual polish](VISUAL_POLISH.md).
 
 Run `python -m pytest tests -q` on a desktop with graphics support.
 `python main.py --self-test artifacts/kitchen-check` captures the scene and F1

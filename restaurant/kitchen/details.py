@@ -1,7 +1,7 @@
 """Crisp architectural trim and flooring, batched once using Arcade shapes."""
 from arcade.shape_list import ShapeElementList, create_rectangle_filled
 
-from restaurant.kitchen.layout import FLOOR_TOP, KITCHEN_HEIGHT, KITCHEN_WIDTH
+from restaurant.kitchen.layout import FLOOR_TOP, KITCHEN_HEIGHT, KITCHEN_WIDTH, PROPS
 
 INK = (65, 49, 43)
 WOOD = (174, 111, 70)
@@ -64,6 +64,17 @@ def room_details(style="warm"):
             r(x, y, 2, min(28, 692 - y), (212, 189, 151))
     r(18, FLOOR_TOP, KITCHEN_WIDTH - 36, 5, DARK_TEAL)
     r(18, FLOOR_TOP + 5, KITCHEN_WIDTH - 36, 3, TEAL)
+    # Fixed equipment is fitted against the wall. These rear upstands make the
+    # blocked strips read as part of the fixture instead of walkable floor.
+    for prop in PROPS:
+        if prop.fixed_to_back_wall:
+            x = prop.x - prop.width / 2
+            bottom = int(prop.y + prop.height / 2) - 4
+            r(x, bottom, prop.width, FLOOR_TOP - bottom, DARK_TEAL)
+            r(x + 4, bottom + 2, prop.width - 8, FLOOR_TOP - bottom - 4, wall)
+            r(x + 4, bottom + 2, prop.width - 8, 4, trim)
+            for seam in range(int(x) + 32, int(x + prop.width) - 4, 32):
+                r(seam, bottom + 6, 2, max(2, FLOOR_TOP - bottom - 8), light)
     r(18, 692, KITCHEN_WIDTH - 36, 12, trim)
     r(18, 692, KITCHEN_WIDTH - 36, 4, LIGHT_WOOD)
     # A clock and small wall chalkboard; all decoration has a useful location.

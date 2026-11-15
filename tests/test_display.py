@@ -12,7 +12,7 @@ def test_physical_window_fits_work_area_at_common_windows_scales(work_size, dpi)
     width, height = fitted_window_size(*work_size, dpi)
     assert width * dpi <= work_size[0] - 64
     assert height * dpi <= work_size[1] - 100
-    assert width <= 1040
+    assert width * dpi < WINDOW_WIDTH + dpi
     assert abs(width / height - WINDOW_WIDTH / WINDOW_HEIGHT) < 0.01
 
 

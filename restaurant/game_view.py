@@ -4,7 +4,7 @@ from collections import deque
 import arcade
 
 from restaurant.audio import KitchenAudio
-from restaurant.display import fit_window, scene_viewport
+from restaurant.display import artwork_viewport, fit_window
 from restaurant.kitchen.days import DAYS
 from restaurant.kitchen.scene import KitchenScene
 from restaurant.ingredients import IngredientSystem
@@ -12,6 +12,7 @@ from restaurant.ingredients.chopping import ChoppingBoard
 from restaurant.ingredients.models import POT_RECIPE
 from restaurant.orders.sidebar import OrderSidebar
 from restaurant.orders.system import HAND_SERVICE_ITEMS, OrderSystem
+from restaurant.pixel_art import PixelCanvas
 from restaurant.player.controller import PlayerController
 from restaurant.player.interaction import choose_target
 from restaurant.shared.contracts import ActionResult, PlateLocation, PotStage
@@ -67,9 +68,11 @@ class GameView(arcade.View):
         super().__init__()
         # The full room and sidebar stay visible in a resizable, DPI-aware window.
         self.camera = arcade.Camera2D(
-            viewport=scene_viewport(self.window.width, self.window.height),
+            viewport=artwork_viewport(self.window),
             position=(0, 0), projection=arcade.LRBT(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT))
         self.ui_camera = arcade.Camera2D(position=(0, 0))
+        self.art = PixelCanvas(self.window)
+        self._frame_labels = []
         self.player = PlayerController(SPAWN)
         self.players = arcade.SpriteList()
         self.players.append(self.player.sprite)
@@ -208,6 +211,7 @@ class GameView(arcade.View):
                 self.handle_interaction(action, self.selected)
         state = self.ingredients.snapshot()
         self.player.set_visual_state(
+            held=state.held,
             carrying_plate=state.plate.location is PlateLocation.CARRIED,
             chopping=self.chopping.state == "chopping",
         )
@@ -295,11 +299,16 @@ class GameView(arcade.View):
         self.audio.play(cue if result.success else "reject")
 
     def text(self, key, value, x, y, size=14, color=INK, **kwargs):
+        # Keep type out of the pixel-art framebuffer, including order-card text.
+        self._frame_labels.append((key, value, x, y, size, color, kwargs))
+
+    def _draw_text(self, key, value, x, y, size, color, kwargs):
         # Rasterize type at its displayed size, instead of shrinking cached
         # world-sized glyphs. This keeps letters intact in letterboxed windows.
         viewport = self.camera.viewport
-        scale = viewport.width / WINDOW_WIDTH
-        x, y = viewport.left + x * scale, viewport.bottom + y * scale
+        ratio = self.window.get_pixel_ratio()
+        scale = viewport.width * ratio / WINDOW_WIDTH
+        x, y = viewport.left * ratio + x * scale, viewport.bottom * ratio + y * scale
         if "width" in kwargs:
             kwargs["width"] = max(1, int(kwargs["width"] * scale))
         if key not in self._text_cache:
@@ -313,15 +322,17 @@ class GameView(arcade.View):
             label.draw()
 
     def on_draw(self):
-        self.clear((30, 43, 49))
-        self.camera.viewport = scene_viewport(self.window.width, self.window.height)
-        self.camera.use()
+        self.camera.viewport = artwork_viewport(self.window)
+        self._frame_labels.clear()
+        self.art.begin()
         view_size = self.window.width, self.window.height, self.window.scale
         if view_size != self._text_view_size:
             self._text_cache.clear()
             self._text_view_size = view_size
         self.ui_camera.viewport = arcade.LBWH(0, 0, self.window.width, self.window.height)
-        self.ui_camera.projection = arcade.LRBT(0, self.window.width, 0, self.window.height)
+        ratio = self.window.get_pixel_ratio()
+        self.ui_camera.projection = arcade.LRBT(0, self.window.width * ratio,
+                                                0, self.window.height * ratio)
         self.kitchen.draw_floor()
         foot_x, foot_y = self.player.ground_position
         arcade.draw_ellipse_filled(foot_x, foot_y - 8, 48, 12, (65, 61, 48, 85))
@@ -392,6 +403,10 @@ class GameView(arcade.View):
                                               (20, 30, 40, 170))
             self.text("paused", "PAUSED  /  P TO RESUME", KITCHEN_WIDTH / 2,
                       KITCHEN_HEIGHT / 2, 24, anchor_x="center")
+        self.art.present()
+        self.ui_camera.use()
+        for label in self._frame_labels:
+            self._draw_text(*label)
 
 
 class DemoWindow(arcade.Window):
@@ -406,14 +421,20 @@ class DemoWindow(arcade.Window):
         super().close()
 
 
-def create_window(*, visible=True):
+def create_window(*, visible=True, show_menu=None):
     # Create small and hidden so Windows reports the actual monitor DPI before
     # calculating size. Show only after fitting: no oversized startup window.
     window = DemoWindow(640, 384, "Classic Chef / Kitchen",
                         visible=False, resizable=True,
                         antialiasing=False, update_rate=1 / 60)
     fit_window(window)
-    window.show_view(GameView(audio_enabled=visible))
+    if show_menu is None:
+        show_menu = visible
+    if show_menu:
+        from restaurant.menu import MainMenu
+        window.show_view(MainMenu(lambda: window.show_view(GameView(audio_enabled=visible))))
+    else:
+        window.show_view(GameView(audio_enabled=visible))
     if visible:
         window.set_visible(True)
     return window

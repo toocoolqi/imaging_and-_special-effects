@@ -9,6 +9,8 @@ from restaurant.game_view import create_window
 from restaurant.display import window_geometry
 from restaurant.ingredients.chopping import CHOP_SECONDS
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION, PROPS
+from restaurant.menu import MainMenu, PLAY_BUTTON
+from restaurant.pixel_art import ART_SIZE
 from restaurant.player.controller import FOOT_HALF_HEIGHT, FOOT_HALF_WIDTH, FOOT_OFFSET_Y
 from restaurant.shared.contracts import PlateLocation, PotStage
 from restaurant.shared.settings import (
@@ -29,7 +31,22 @@ def run_packaged_check(output: Path) -> int:
     def exercise(delta_time):
         arcade.unschedule(exercise)
         try:
+            menu = window.current_view
+            check(isinstance(menu, MainMenu), "App opens on the main menu")
+            menu.on_draw()
+            arcade.get_image().save(output / "main-menu.png")
+            viewport = menu.display_viewport()
+            menu.on_mouse_press(
+                viewport.left + PLAY_BUTTON.center_x * viewport.width / WINDOW_WIDTH,
+                viewport.bottom + PLAY_BUTTON.center_y * viewport.height / WINDOW_HEIGHT,
+                arcade.MOUSE_BUTTON_LEFT, 0)
             view = window.current_view
+            check(view is not menu, "Clicking Play opens the first kitchen")
+            view.on_draw()
+            arcade.get_image().save(output / "kitchen.png")
+            check(view.art.texture.size == ART_SIZE
+                  and window.ctx.active_framebuffer is window.ctx.screen,
+                  "Artwork shares one pixel grid and restores the display framebuffer")
             geometry = window_geometry(window)
             report["window"] = geometry
             work_left, work_top, work_width, work_height = geometry["work_area_pixels"]
@@ -135,6 +152,16 @@ def run_packaged_check(output: Path) -> int:
             use("serve")
             check(view.orders.started and len(view.orders.snapshot()) == 1,
                   "Task 2 service opens the first order at the hatch")
+            for food in ("tomato", "sandwich"):
+                use(f"box_{food}")
+                start_anchor = view.player.hand_anchor
+                view.on_update(.18)
+                check(view.ingredients.snapshot().held == food
+                      and view.player.hand_anchor[1] > start_anchor[1],
+                      f"Picking up {food} lifts it into the hand")
+                view.on_draw()
+                arcade.get_image().save(output / f"holding-{food}.png")
+                use("bin")
             use("plate")
             check(view.ingredients.snapshot().plate.location is PlateLocation.CARRIED
                   and view.player.carrying_plate and view.player.pose == "idle",
@@ -229,7 +256,7 @@ def run_packaged_check(output: Path) -> int:
             window.close()
 
     try:
-        window = create_window(visible=False)
+        window = create_window(visible=False, show_menu=True)
         arcade.schedule(exercise, 0.25)
         arcade.run()
     except Exception:
