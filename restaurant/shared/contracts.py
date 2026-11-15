@@ -1,11 +1,30 @@
 """Immutable records agreed by all three members; no system logic lives here."""
 from dataclasses import dataclass
+from enum import StrEnum
 from math import isfinite
-from typing import Literal
+from typing import Literal, get_args
 
 Direction = Literal["up", "down", "left", "right"]
 IngredientId = Literal["sandwich", "tomato", "noodles", "milk"]
-TargetKind = Literal["box", "plate", "bin", "serve", "chop"]
+DishId = Literal["pasta"]
+PreparedFoodId = Literal["chopped_tomato"]
+FoodId = IngredientId | PreparedFoodId | DishId
+TargetKind = Literal["box", "plate", "bin", "serve", "chop", "pot"]
+_RAW_IDS = get_args(IngredientId)
+_FOOD_IDS = _RAW_IDS + get_args(PreparedFoodId) + get_args(DishId)
+
+
+class PlateLocation(StrEnum):
+    DOCKED = "docked"
+    CARRIED = "carried"
+    AT_SERVICE = "at_service"
+
+
+class PotStage(StrEnum):
+    EMPTY = "empty"
+    LOADING = "loading"
+    COOKING = "cooking"
+    READY = "ready"
 
 
 @dataclass(frozen=True)
@@ -18,22 +37,22 @@ class InteractionTarget:
     ingredient_id: IngredientId | None = None
 
     def __post_init__(self):
-        if not self.target_id or self.kind not in ("box", "plate", "bin", "serve", "chop"):
+        if not self.target_id or self.kind not in ("box", "plate", "bin", "serve", "chop", "pot"):
             raise ValueError("Target needs a nonempty ID and a valid kind.")
         if not isfinite(self.x) or not isfinite(self.y):
             raise ValueError("Target coordinates must be finite.")
         if self.kind == "box":
-            if self.ingredient_id not in ("sandwich", "tomato", "noodles", "milk"):
+            if self.ingredient_id not in _RAW_IDS:
                 raise ValueError("A box must identify its ingredient.")
         elif self.ingredient_id is not None:
             raise ValueError("Only box targets have an ingredient ID.")
 
 
-def _validate_ingredients(values):
+def _validate_food(values):
     if not isinstance(values, tuple):
         raise ValueError("Ingredient collections must be immutable tuples.")
-    if any(value not in ("sandwich", "tomato", "noodles", "milk") for value in values):
-        raise ValueError("Unknown ingredient ID.")
+    if any(value not in _FOOD_IDS for value in values):
+        raise ValueError("Unknown food ID.")
 
 
 def _nonnegative_integer(value, name):
@@ -43,24 +62,47 @@ def _nonnegative_integer(value, name):
 
 @dataclass(frozen=True)
 class PlateSnapshot:
-    ingredients: tuple[IngredientId, ...]
+    ingredients: tuple[FoodId, ...]
     revision: int
+    location: PlateLocation = PlateLocation.DOCKED
 
     def __post_init__(self):
-        _validate_ingredients(self.ingredients)
+        _validate_food(self.ingredients)
         _nonnegative_integer(self.revision, "revision")
+        if not isinstance(self.location, PlateLocation):
+            raise ValueError("Invalid plate location.")
+
+
+@dataclass(frozen=True)
+class PotSnapshot:
+    stage: PotStage = PotStage.EMPTY
+    ingredients: tuple[IngredientId, ...] = ()
+    remaining_seconds: float = 0.0
+
+    def __post_init__(self):
+        if not isinstance(self.stage, PotStage):
+            raise ValueError("Invalid pot stage.")
+        if not isinstance(self.ingredients, tuple) or any(item not in _RAW_IDS for item in self.ingredients):
+            raise ValueError("Pot ingredients must be an immutable tuple of raw food IDs.")
+        if not isfinite(self.remaining_seconds) or self.remaining_seconds < 0:
+            raise ValueError("Pot time must be finite and nonnegative.")
 
 
 @dataclass(frozen=True)
 class IngredientSnapshot:
-    held: IngredientId | None
+    held: FoodId | None
     plate: PlateSnapshot
+    pot: PotSnapshot = PotSnapshot()
 
     def __post_init__(self):
         if self.held is not None:
-            _validate_ingredients((self.held,))
+            _validate_food((self.held,))
         if not isinstance(self.plate, PlateSnapshot):
             raise ValueError("plate must be a PlateSnapshot.")
+        if not isinstance(self.pot, PotSnapshot):
+            raise ValueError("pot must be a PotSnapshot.")
+        if self.held is not None and self.plate.location is not PlateLocation.DOCKED:
+            raise ValueError("The chef can carry either food or the plate.")
 
 
 @dataclass(frozen=True)
@@ -71,27 +113,38 @@ class ActionResult:
 
 @dataclass(frozen=True)
 class OrderSnapshot:
+    """One order card. A pending ticket waits at the hatch with its timer frozen."""
     order_id: int
     recipe_name: str
-    required: tuple[IngredientId, ...]
+    required: tuple[FoodId, ...]
     remaining_seconds: float
+    status: Literal["pending", "accepted"] = "pending"
+    patience_seconds: float = 120.0
+    reward: int = 0   # gold paid if served now: base price + the shrinking speed tip
 
     def __post_init__(self):
         _nonnegative_integer(self.order_id, "order_id")
-        _validate_ingredients(self.required)
-        if not isfinite(self.remaining_seconds):
-            raise ValueError("remaining_seconds must be finite.")
+        _nonnegative_integer(self.reward, "reward")
+        _validate_food(self.required)
+        if not isfinite(self.remaining_seconds) or self.remaining_seconds < 0:
+            raise ValueError("remaining_seconds must be finite and nonnegative.")
+        if self.status not in ("pending", "accepted"):
+            raise ValueError("Invalid order status.")
+        if not isfinite(self.patience_seconds) or self.patience_seconds <= 0:
+            raise ValueError("patience_seconds must be positive and finite.")
 
 
 @dataclass(frozen=True)
 class OrderStats:
+    """score is the day's gold; target is the gold that completes the day."""
     accepted: int
     completed: int
     expired: int
     score: int
+    target: int = 0
 
     def __post_init__(self):
-        for name in ("accepted", "completed", "expired", "score"):
+        for name in ("accepted", "completed", "expired", "score", "target"):
             _nonnegative_integer(getattr(self, name), name)
 
 
@@ -101,8 +154,34 @@ class ServeResult:
     message: str
     order_id: int | None
     plate_revision: int
+    gold: int = 0
 
     def __post_init__(self):
         _nonnegative_integer(self.plate_revision, "plate_revision")
+        _nonnegative_integer(self.gold, "gold")
+        if self.order_id is not None:
+            _nonnegative_integer(self.order_id, "order_id")
+        if not self.success and self.gold:
+            raise ValueError("A failed serve cannot award gold.")
+
+
+OrderEventKind = Literal["arrived", "accepted", "served", "expired", "day_complete"]
+
+
+@dataclass(frozen=True)
+class OrderEvent:
+    """Something that happened inside OrderSystem, for effects and sound only.
+
+    Game rules never depend on events; they only drive presentation.
+    """
+    kind: OrderEventKind
+    order_id: int | None = None
+    recipe_name: str = ""
+    gold: int = 0
+
+    def __post_init__(self):
+        if self.kind not in ("arrived", "accepted", "served", "expired", "day_complete"):
+            raise ValueError("Unknown order event kind.")
+        _nonnegative_integer(self.gold, "gold")
         if self.order_id is not None:
             _nonnegative_integer(self.order_id, "order_id")

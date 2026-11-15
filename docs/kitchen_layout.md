@@ -1,8 +1,8 @@
 # Restaurant kitchen layout
 
 The room is **960 x 704 world pixels**, about 14% less area than v0.3.0. A
-256-pixel sidebar sits outside it. The chef remains 56 x 92, so the smaller room
-feels more proportionate without shrinking the character or its animations.
+256-pixel sidebar sits outside it. The chef now renders at 184 world pixels tall.
+Its foot hitbox and movement coordinates are independent of that size.
 
 The layout follows a simple route: pantry crates, chopping island, stove,
 plate island, then the **service hatch into the dining room**. The plate island
@@ -12,7 +12,8 @@ The service hatch is a visible pass for food; the chef cannot walk through it.
 
 ![Kitchen preview](images/kitchen_preview.png)
 
-Crates, the plate and bin use task2 food state in the shared game: E collects/adds/discards and Q removes from the plate. Service/chopping remain previews. Cooking and physical plate transport are assigned in [TEAM_PLAN.md](TEAM_PLAN.md). No hold-item animations are included.
+Crates, the plate, pot, chopping board and service hatch use the live gameplay
+systems. See [current gameplay](FINAL_GAMEPLAY.md) for player controls and recipes.
 
 ## Collisions and drawing order
 
@@ -25,12 +26,16 @@ See [Arcade's hitbox API](https://api.arcade.academy/en/3.3.3/api_docs/api/hitbo
 `KitchenProp.rectangle` describes the visible image. `footprint` is a local
 `(offset_x, offset_y, width, height)` rectangle measured around its floor base.
 `collision_rectangle` converts it to world coordinates. All floor-standing
-furniture has a footprint entirely inside its image, with no added padding.
+islands and crates have footprints inside their images, with no added padding.
+The stove, sink and service counter set `fixed_to_back_wall=True`: their
+collision rectangles extend from the measured front edge to the rear wall.
+Visible upstands connect them to the backsplash. The chef cannot enter those
+rear strips from either side, in any of the four kitchen variants.
 Raised worktops can overlap the chef's body visually; feet cannot enter bases.
 
 `KitchenScene.draw_order()` sorts furniture and the chef from back to front
 using ground positions. Decorations stay attached to their supporting table.
-This lets the chef disappear naturally behind counters and appear in front
+This lets the chef overlap naturally behind the center islands and appear in front
 when approaching their near edge. F1 shows the actual foot/base rectangles.
 The large F1 circles are interaction ranges, not collision boundaries.
 
@@ -52,22 +57,25 @@ all accessible obstacle sides are checked with the actual foot dimensions.
 
 ## Integration hooks
 
-- `InteractionTarget("chopping_board", "chop", 300, 302)` previews future cutting.
+- `InteractionTarget("chopping_board", "chop", 240, 318)` is the warm kitchen board approach.
 - `InteractionTarget("plate", "plate", 620, 302)` handles the E/Q plate intents.
 - `InteractionTarget("serve", "serve", 744, 472)` is now at the service hatch.
 
-These stable IDs reach `GameView.handle_interaction(action, target)`. Connect
-future system methods there. Keep food state out of `PlayerController`.
-No cutting timer, inventory or order logic is created by this demo.
+These stable IDs reach `GameView.handle_interaction(action, target)`. The chef
+faces the board during its timed chopping sequence. The board displays raw
+tomato, then chopped pieces that can be collected into the hand or plate.
 
 Food IDs now match task2: sandwich, tomato, noodles, milk. Box targets are box_sandwich, box_tomato, box_noodles, box_milk. The kitchen loads their prepared sprites directly from assets/ingredients/sprites, including plate and pot_empty. Other kitchen architecture keeps its existing artwork.
 
 ## Window, checks and packaging
 
-Startup prefers a 1040-pixel logical width and fits the height to the room's
-aspect ratio. It measures Windows display scaling and the monitor work area
+Startup prefers a 1216 x 704 physical-pixel scene (plus any DPI rounding margin).
+It measures Windows display scaling and the monitor work area
 before showing the window, leaving margins for the frame/taskbar. Resizing
-keeps the whole scene visible without stretching. Text uses the displayed size.
+keeps the whole scene visible without stretching. Art is drawn to a 608 x 352
+framebuffer and enlarged with nearest sampling. Whole-pixel scaling is used
+when it fits comfortably; small windows use a sharp fitted fallback. Text is
+drawn separately at its final physical size. See [visual polish](VISUAL_POLISH.md).
 
 Run `python -m pytest tests -q` on a desktop with graphics support.
 `python main.py --self-test artifacts/kitchen-check` captures the scene and F1

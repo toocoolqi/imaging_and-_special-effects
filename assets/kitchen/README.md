@@ -1,4 +1,37 @@
-# Supplied kitchen and item pictures
+# Kitchen artwork
+
+## The four day kitchens
+
+Each day loads its own art set, with **identical file names** in every folder:
+
+| Folder | Day | How it is made from the warm pictures below |
+| --- | --- | --- |
+| `warm_overgrown/` | 1 | Rot, chipped paint, damp streaks, mould, moss, vines, cracked tiles, puddles |
+| `warm_clean/` | 2 | The pictures resized onto the game's pixel grid |
+| `metal_damaged/` | 3 | Steel + rust on edges and seams, drips, dents, hanging doors, missing tiles, exposed wiring |
+| `metal_clean/` | 4 | Wood and teal paint recoloured to brushed steel, cobalt trim, white tiles |
+
+Every file sits exactly on the art grid of `restaurant/pixel_art.py` (one
+image pixel = one art pixel = two world pixels), so the game draws it 1:1.
+`room.png` is the whole floor, walls and rear upstands (480 x 352, opaque).
+Clean and damaged twins have pixel-identical outlines, so damage can never
+change a footprint or hide a station. Crates, plate, pot and food are never
+copied here: they stay Member 2's sprites in `assets/ingredients/sprites/`.
+`manifest.json` lists every file with its size, source picture and crop.
+
+Rebuild all four sets (Pillow only, fixed seeds, identical output each time):
+
+```shell
+python -m tools.build_kitchens
+```
+
+No image generation was used for the four sets: they are image processing
+(HSV colour masks, luminance recolouring, noise masks, morphology, blending)
+plus procedurally drawn pixel-art detail. See `tools/build_kitchens.py` and
+`tools/kitchen_fx.py`. If a folder is missing, the game falls back to the
+pictures below and the Arcade-shape floor in `restaurant/kitchen/details.py`.
+
+## Supplied kitchen and item pictures (source art)
 
 These prepared PNGs are crops of the user's two supplied presentation sheets:
 

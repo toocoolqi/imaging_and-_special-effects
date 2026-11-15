@@ -7,8 +7,14 @@ import arcade
 
 from restaurant.game_view import create_window
 from restaurant.display import window_geometry
+from restaurant.ingredients.chopping import CHOP_SECONDS
 from restaurant.kitchen.layout import ANIMATION_TEST_POSITION, PROPS
+from restaurant.kitchen.days import DAYS
+from restaurant.menu import MainMenu, PLAY_BUTTON
+from restaurant.orders.models import DayRules
+from restaurant.pixel_art import ART_SIZE
 from restaurant.player.controller import FOOT_HALF_HEIGHT, FOOT_HALF_WIDTH, FOOT_OFFSET_Y
+from restaurant.shared.contracts import PlateLocation, PotStage
 from restaurant.shared.settings import (
     KITCHEN_HEIGHT, KITCHEN_WIDTH, PLAYER_SCALE, TARGETS, WINDOW_HEIGHT, WINDOW_WIDTH,
 )
@@ -27,7 +33,22 @@ def run_packaged_check(output: Path) -> int:
     def exercise(delta_time):
         arcade.unschedule(exercise)
         try:
+            menu = window.current_view
+            check(isinstance(menu, MainMenu), "App opens on the main menu")
+            menu.on_draw()
+            arcade.get_image().save(output / "main-menu.png")
+            viewport = menu.display_viewport()
+            menu.on_mouse_press(
+                viewport.left + PLAY_BUTTON.center_x * viewport.width / WINDOW_WIDTH,
+                viewport.bottom + PLAY_BUTTON.center_y * viewport.height / WINDOW_HEIGHT,
+                arcade.MOUSE_BUTTON_LEFT, 0)
             view = window.current_view
+            check(view is not menu, "Clicking Play opens the first kitchen")
+            view.on_draw()
+            arcade.get_image().save(output / "kitchen.png")
+            check(view.art.texture.size == ART_SIZE
+                  and window.ctx.active_framebuffer is window.ctx.screen,
+                  "Artwork shares one pixel grid and restores the display framebuffer")
             geometry = window_geometry(window)
             report["window"] = geometry
             work_left, work_top, work_width, work_height = geometry["work_area_pixels"]
@@ -40,8 +61,8 @@ def run_packaged_check(output: Path) -> int:
                                  and bottom <= work_top + work_height)
             check(fits, "Complete window fits desktop work area including DPI and frame")
             table = next(prop for prop in PROPS if prop.prop_id == "chopping_table")
-            check(view.player.sprite.height >= table.height * 0.75,
-                  "Chef is proportionate to the furniture")
+            check(view.player.visual_height >= table.height * 1.5,
+                  "Chef has a larger visual scale while retaining his collision footprint")
             check("back_wall" not in view.kitchen.textures,
                   "One consistent low top-down room; no perspective image strip")
             for key, direction, axis, sign in (
@@ -61,8 +82,9 @@ def run_packaged_check(output: Path) -> int:
                 view.on_draw()
                 view.on_key_release(key, 0)
                 view.on_update(0.01)
-                check(view.player.state == "idle" and view.player.direction == direction,
-                      f"{direction} idle and facing")
+                check(view.player.pose == "idle" and view.player.direction == direction
+                      and view.player.sprite.texture is not frame,
+                      f"{direction} uses a directional standing pose after release")
 
             view.reset()
             plate = next(target for target in TARGETS if target.kind == "plate")
@@ -117,47 +139,147 @@ def run_packaged_check(output: Path) -> int:
                         assert view.player.ground_position[1] > wall.top
                     tested += 1
                 check(tested > 0, f"Kitchen obstacle {index + 1}: solid from clear approaches")
-            chop = next(target for target in TARGETS if target.kind == "chop")
             view.reset()
-            view.player.reset((chop.x, chop.y))
-            view.on_key_press(arcade.key.E, 0)
-            view.on_update(0.01)
-            check(view.interaction_count == 1 and "Cutting" in view.message,
-                  "Chopping board preview hook; food stays decorative")
-            # Verify task2 is usable in the combined room and bundled assets.
-            view.clear_input()
-            box = next(t for t in TARGETS if t.ingredient_id == "tomato")
-            view.player.reset((box.x, box.y))
-            view.on_key_press(arcade.key.E, 0)
-            view.on_update(0.01)
-            check(view.ingredients.snapshot().held == "tomato", "Task2 pickup in the shared kitchen")
-            view.clear_input()
-            view.player.reset((plate.x, plate.y))
-            view.on_key_press(arcade.key.E, 0)
-            view.on_update(0.01)
+
+            def press(key):
+                view.on_key_press(key, 0)
+                view.on_update(0)
+                view.on_key_release(key, 0)
+
+            def use(target_id):
+                target = next(item for item in view.targets if item.target_id == target_id)
+                view.player.reset((target.x, target.y))
+                press(arcade.key.E)
+
+            # A scripted menu so the check always meets a tomato sandwich, then pasta.
+            view.orders.reset(seed=1, rules=DayRules(150, 120.0, 12.0,
+                                                     recipe_ids=("tomato_sandwich", "pasta")))
+            first = view.orders.snapshot()[0]
+            view.on_update(1.0)
+            check(first.recipe_name == "Tomato sandwich"
+                  and view.orders.snapshot()[0].remaining_seconds < first.remaining_seconds,
+                  "The first order arrives live and its timer starts by itself")
+            for food in ("tomato", "sandwich"):
+                use(f"box_{food}")
+                start_anchor = view.player.hand_anchor
+                view.on_update(.18)
+                check(view.ingredients.snapshot().held == food
+                      and view.player.hand_anchor[1] > start_anchor[1],
+                      f"Picking up {food} lifts it into the hand")
+                view.on_draw()
+                arcade.get_image().save(output / f"holding-{food}.png")
+                use("bin")
+            use("plate")
+            check(view.ingredients.snapshot().plate.location is PlateLocation.CARRIED
+                  and view.player.carrying_plate and view.player.pose == "idle",
+                  "Task 2 empty plate pickup selects a carrying idle pose")
+            use("box_tomato")
             check(view.ingredients.snapshot().plate.ingredients == ("tomato",),
-                  "Task2 places collected food onto the shared kitchen plate")
+                  "Task 2 pickups add directly to the carried plate")
             view.on_draw()
             arcade.get_image().save(output / "food-on-plate.png")
-            preview_message = view.message
-            serve = next(target for target in TARGETS if target.kind == "serve")
-            view.reset()
-            view.player.reset((serve.x, serve.y))
-            view.on_key_press(arcade.key.E, 0)
-            view.on_update(0.01)
-            check(view.selected == serve and "dining room" in view.message,
-                  "Serving hook reaches the visible dining-room hatch")
-            view.clear_input()
-            view.player.reset((chop.x, chop.y))
-            view.on_key_press(arcade.key.P, 0)
+
+            view.player.reset(ANIMATION_TEST_POSITION)
+            view.on_update(0)
             before = view.player.position
-            view.on_update(1)
-            check(view.player.position == before and view.paused, "Pause freezes player")
-            view.on_key_release(arcade.key.P, 0)
-            view.on_key_press(arcade.key.P, 0)
-            view.clear_input()
-            view.message = preview_message
+            view.on_key_press(arcade.key.D, 0)
+            view.on_update(0.14)
+            carry_walk = view.player.sprite.texture
+            view.on_update(0.14)
+            check(view.player.pose == "walk" and view.player.carrying_plate
+                  and view.player.position[0] > before[0]
+                  and view.player.sprite.texture is not carry_walk,
+                  "Carrying the plate visibly animates while walking")
+            view.on_draw()
+            arcade.get_image().save(output / "carry-walk.png")
+            view.on_key_release(arcade.key.D, 0)
             view.on_update(0.01)
+            check(view.player.pose == "idle" and view.player.carrying_plate
+                  and view.player.direction == "right",
+                  "Releasing movement restores the side-facing carry idle")
+
+            use("chopping_board")
+            check(view.chopping.state == "chopping" and view.player.pose == "chop"
+                  and not view.ingredients.snapshot().plate.ingredients,
+                  "Chopping transfers a tomato to the board and starts the chop pose")
+            chop_frame = view.player.sprite.texture
+            view.on_update(CHOP_SECONDS / 4)
+            check(view.player.sprite.texture is not chop_frame,
+                  "Knife and arm advance through chopping frames")
+            view.on_draw()
+            arcade.get_image().save(output / "chopping.png")
+            before = view.player.position, view.chopping.progress
+            press(arcade.key.P)
+            view.on_update(CHOP_SECONDS)
+            check((view.player.position, view.chopping.progress) == before and view.paused,
+                  "Pause freezes the player and chopping progress")
+            press(arcade.key.P)
+            view.on_update(CHOP_SECONDS)
+            check(view.chopping.state == "ready", "Chopping completes after the animation")
+            use("chopping_board")
+            check(view.ingredients.snapshot().plate.ingredients == ("chopped_tomato",),
+                  "Collect the chopped tomato from the board onto the plate")
+            use("box_sandwich")
+            use("serve")
+            check(view.orders.stats().completed == 1 and view.total_gold > 0
+                  and not view.ingredients.snapshot().plate.ingredients
+                  and view.ingredients.snapshot().plate.location is PlateLocation.CARRIED,
+                  "Serve chopped tomato sandwich and retain the same empty plate")
+            check(any(p.kind == "coin" for p in view.effects.particles)
+                  and view.effects.texts and view.effects.texts[-1].value.startswith("+"),
+                  "Serving bursts coins and floats the gold earned above the hatch")
+            view.on_update(2.1)
+            check(view.orders.active_count >= 1
+                  and view.orders.snapshot()[0].recipe_name == "Pasta",
+                  "The next customer's pasta order arrives soon after")
+            view.on_draw()
+            arcade.get_image().save(output / "served.png")
+
+            for ingredient in ("noodles", "milk", "tomato"):
+                use(f"box_{ingredient}")
+            use("pot")
+            check(view.ingredients.snapshot().pot.stage is PotStage.COOKING,
+                  "Task 2 cooks noodles, milk and tomato from the carried plate")
+            view.on_update(11)
+            use("pot")
+            check(view.ingredients.snapshot().plate.ingredients == ("pasta",),
+                  "Task 2 collects cooked pasta on the empty carried plate")
+            use("serve")
+            check(view.orders.stats().completed == 2 and view.day_complete,
+                  "Pasta service earns gold and completes the day")
+            use("plate")
+            press(arcade.key.ENTER)
+            check(view.day_index == 1, "Returning the plate lets the player open the next kitchen")
+            # Every day uses its own prepared kitchen art and still works end to end.
+            for index, day in enumerate(DAYS):
+                view.go_to_day(index)
+                view.fade = 0.0
+                check(view.kitchen.room is not None
+                      and (day.art_dir / "room.png").is_file(),
+                      f"Day {index + 1} loads its {day.map_id} kitchen artwork")
+                order = view.orders.snapshot()[0]
+                if order.recipe_name in ("Sandwich", "Milk"):
+                    use(f"box_{order.required[0]}")
+                else:
+                    use("plate")
+                    for food in order.required:
+                        if food == "pasta":
+                            for raw in ("noodles", "milk", "tomato"):
+                                use(f"box_{raw}")
+                            use("pot")
+                            view.on_update(4.5)
+                            use("pot")
+                        else:
+                            use(f"box_{food}")
+                view.on_update(0.3)
+                view.on_draw()
+                arcade.get_image().save(output / f"day{index + 1}-{day.map_id}.png")
+                use("serve")
+                check(view.orders.stats().completed == 1
+                      and not arcade.check_for_collision_with_list(view.player.sprite, view.walls),
+                      f"Day {index + 1} ({day.name}): an order is cooked and served")
+            view.go_to_day(1)
+            view.fade = 0.0
             view.on_draw()
             arcade.get_image().save(output / "demo.png")
             view.debug = True
@@ -178,7 +300,7 @@ def run_packaged_check(output: Path) -> int:
             window.close()
 
     try:
-        window = create_window(visible=False)
+        window = create_window(visible=False, show_menu=True)
         arcade.schedule(exercise, 0.25)
         arcade.run()
     except Exception:

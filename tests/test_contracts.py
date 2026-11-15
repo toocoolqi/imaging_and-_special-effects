@@ -4,7 +4,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from restaurant.shared.contracts import (
-    ActionResult, IngredientSnapshot, OrderSnapshot, OrderStats,
+    ActionResult, IngredientSnapshot, OrderEvent, OrderSnapshot, OrderStats,
     PlateSnapshot, ServeResult,
 )
 
@@ -53,3 +53,28 @@ def test_invalid_held_ingredient_or_timer_is_rejected():
         IngredientSnapshot("unknown", PlateSnapshot((), 0))
     with pytest.raises(ValueError):
         OrderSnapshot(1, "salad", ("sandwich", "tomato"), float("nan"))
+
+
+def test_new_order_fields_have_safe_defaults_for_existing_callers():
+    order = OrderSnapshot(1, "Sample meal", ("noodles", "milk"), 60.0)
+    assert (order.status, order.patience_seconds, order.reward) == ("pending", 120.0, 0)
+    assert OrderStats(3, 0, 0, 0).target == 0
+    assert ServeResult(True, "Matched", 1, 2).gold == 0
+
+
+def test_order_reward_gold_and_events_are_validated():
+    ticket = OrderSnapshot(2, "Pasta", ("pasta",), 90.0, "accepted", 90.0, 120)
+    assert ticket.reward == 120 and ticket.patience_seconds == 90.0
+    with pytest.raises(ValueError):
+        OrderSnapshot(2, "Pasta", ("pasta",), 90.0, "accepted", 0.0)
+    with pytest.raises(ValueError):
+        OrderSnapshot(2, "Pasta", ("pasta",), 90.0, "accepted", 90.0, -5)
+    with pytest.raises(ValueError):
+        ServeResult(False, "No match", None, 0, 50)        # a failure can never pay
+    with pytest.raises(ValueError):
+        OrderStats(1, 0, 0, 0, -1)
+    event = OrderEvent("served", 4, "Pasta", 67)
+    assert (event.kind, event.gold) == ("served", 67)
+    assert OrderEvent("day_complete", gold=210).order_id is None
+    with pytest.raises(ValueError):
+        OrderEvent("exploded", 1)

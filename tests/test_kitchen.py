@@ -1,4 +1,4 @@
-"""Map checks: artwork, solid furniture, safe paths, and the reserved chop hook."""
+"""Map checks for artwork, solid furniture, safe paths and station input."""
 from collections import deque
 from math import isfinite
 
@@ -135,7 +135,7 @@ def test_each_obstacle_blocks_its_accessible_sides(rectangle):
     assert checked, f"No clear approach tested for obstacle {rectangle}"
 
 
-def test_chopping_station_is_a_feedback_hook_only():
+def test_chopping_station_requires_an_ingredient():
     chopping = next(item for item in TARGETS if item.kind == "chop")
     assert InteractionTarget("future_chop", "chop", chopping.x, chopping.y).ingredient_id is None
     with pytest.raises(ValueError, match="Only box"):
@@ -151,6 +151,7 @@ def test_chopping_station_is_a_feedback_hook_only():
         assert view.selected == chopping
         assert view.interaction_count == 1
         assert "Cutting" in view.message
+        assert view.chopping.state == "idle"
         assert view.player.position == before and view.player.state == "idle"
         assert view.targets == targets
         view.on_key_release(arcade.key.E, 0)
@@ -191,7 +192,7 @@ def test_chef_can_reach_counter_edge_and_is_occluded_only_when_behind():
         window.close()
 
 
-def test_service_hatch_uses_existing_serve_hook():
+def test_service_hatch_asks_for_food_when_nothing_is_carried():
     window = create_window(visible=False)
     try:
         view = window.current_view
@@ -201,6 +202,7 @@ def test_service_hatch_uses_existing_serve_hook():
         view.on_update(1 / 60)
         assert view.selected == target
         assert view.interaction_count == 1
-        assert "dining room" in view.message
+        assert "Bring a plate" in view.message
+        assert view.orders.active_count == 1 and view.orders.stats().completed == 0
     finally:
         window.close()

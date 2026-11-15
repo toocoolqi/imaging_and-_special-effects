@@ -1,3 +1,5 @@
+> The assignment build has a clickable main menu, consistent pixel rendering, four playable days in four kitchen art sets (overgrown, warm, damaged steel, steel), Task 2 cooking, timed orders with gold and speed tips that get busier each day, order effects, room ambience and music, and a larger chef with standing, walking, plate carrying and chopping animations. See [the current controls and gameplay](docs/FINAL_GAMEPLAY.md) and [the orders and kitchens guide](docs/GUIDE_orders_and_kitchens.md).
+
 # Restaurant game — shared team starter
 
 One shared Python Arcade project for all three members. The Classic Chef player
@@ -14,8 +16,8 @@ See [kitchen layout notes](docs/kitchen_layout.md).
 
 ## Play without the repository
 
-Download **kitchen-demo-windows-v0.5.0.zip** from the
-[polished restaurant demo release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.5.0).
+Download **kitchen-demo-windows-v0.8.1.zip** from the
+[current release](https://github.com/toocoolqi/imaging_and-_special-effects/releases/tag/kitchen-demo-v0.8.1).
 Extract the whole ZIP and
 double-click `PlayerDemo/PlayerDemo.exe`. It includes Python, Arcade and artwork.
 Keep `_internal` beside the EXE. No Git or Python installation is needed to play.
@@ -50,18 +52,28 @@ and input use Arcade. A graphics driver supporting OpenGL 3.3+ is required.
 
 | Key | Action |
 | --- | --- |
+| Click Play / Enter on the menu | Start the first kitchen |
+| Click Quit / Esc on the menu | Close the app |
 | WASD / arrows | Move, with equal straight and diagonal speed |
 | E | Use the nearest station once within 64 pixels |
+| E at the service hatch | Serve the carried plate, or a sandwich or milk in hand |
 | Q | Remove the newest plated food into empty hands |
+| Enter | Advance after reaching the day's gold target and returning the plate |
+| 1 - 4 | Jump to a day (starts it fresh) |
+| M | Mute/unmute |
 | P | Pause/resume |
 | R | Reset |
 | F1 | Show collision and interaction guides |
 | Esc | Exit |
 | Drag window edges / maximize | Resize while keeping the whole room visible |
 
-No hold-item animations are included. Crates, plate and bin now use the task2 IngredientSystem.
-Cooking, reusable plate transport, sidebar orders and sound are assigned next.
-The chopping table's E preview is reserved for the future cutting system.
+Press E at the board with a tomato in hand or on the carried plate. The chef
+chops it, then you can press E to collect the pieces.
+
+The artwork shares one pixel grid, with sharp enlargement and separately drawn
+text. The stove, sink and service hatch are fixed to the back wall; the chef can
+use their fronts but cannot walk into their rear gaps. Held food follows the
+moving hand. See [rendering and integration notes](docs/VISUAL_POLISH.md).
 
 ## Current member assignments
 
@@ -75,8 +87,17 @@ Read [TEAM_PLAN.md](docs/TEAM_PLAN.md), then your guide:
 
 The old member guides describe the previous split and are historical. The
 IngredientSystem from task2 now works in the kitchen; run its independent lab
-with `python -m demos.ingredients_demo`. Cooking, order processing, physical
-plate transport and audio are the next assignment, not completed features.
+with `python -m demos.ingredients_demo`; the order system has its own lab,
+`python -m demos.orders_demo`. The main game uses the contributed Task 2
+cooking from commit `4479a22` with the timed order system and the four
+kitchen art sets described in [the orders and kitchens guide](docs/GUIDE_orders_and_kitchens.md).
+
+Generated assets are reproducible:
+
+```powershell
+.venv\Scripts\python.exe -m tools.build_kitchens   # four kitchen art sets
+.venv\Scripts\python.exe -m tools.make_sounds      # order cues, ambience and music
+```
 
 ## Run the checks
 

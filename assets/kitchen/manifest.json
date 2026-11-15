@@ -1,0 +1,707 @@
+{
+  "tool": "python -m tools.build_kitchens (Pillow)",
+  "grid": "1 image pixel = 1 art pixel = 2 world pixels (restaurant/pixel_art.py)",
+  "maps": {
+    "warm_clean": {
+      "day": 2,
+      "name": "Warm Kitchen",
+      "style": "warm",
+      "files": {
+        "room.png": {
+          "pixels": [
+            480,
+            352
+          ],
+          "world_size": [
+            960,
+            704
+          ],
+          "source": "painted by tools/build_kitchens.py",
+          "alpha": "opaque"
+        },
+        "bin.png": {
+          "pixels": [
+            25,
+            35
+          ],
+          "world_size": [
+            50,
+            70
+          ],
+          "source": "assets/kitchen/bin.png",
+          "source_crop_ltwh": null,
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "clean_board.png": {
+          "pixels": [
+            38,
+            18
+          ],
+          "world_size": [
+            76,
+            35
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            199,
+            738,
+            440,
+            197
+          ],
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "extractor.png": {
+          "pixels": [
+            110,
+            56
+          ],
+          "world_size": [
+            220,
+            111
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            841,
+            371,
+            550,
+            277
+          ],
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "pass_counter.png": {
+          "pixels": [
+            128,
+            45
+          ],
+          "world_size": [
+            256,
+            90
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            803,
+            108,
+            634,
+            222
+          ],
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "service_hatch.png": {
+          "pixels": [
+            128,
+            56
+          ],
+          "world_size": [
+            256,
+            112
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            816,
+            686,
+            612,
+            267
+          ],
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "sink.png": {
+          "pixels": [
+            105,
+            49
+          ],
+          "world_size": [
+            210,
+            98
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            124,
+            58,
+            578,
+            271
+          ],
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "spice_shelf.png": {
+          "pixels": [
+            95,
+            47
+          ],
+          "world_size": [
+            190,
+            94
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            178,
+            395,
+            501,
+            250
+          ],
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "stove.png": {
+          "pixels": [
+            62,
+            60
+          ],
+          "world_size": [
+            124,
+            119
+          ],
+          "source": "assets/kitchen/stove.png",
+          "source_crop_ltwh": null,
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        },
+        "table.png": {
+          "pixels": [
+            90,
+            55
+          ],
+          "world_size": [
+            180,
+            110
+          ],
+          "source": "assets/kitchen/table.png",
+          "source_crop_ltwh": null,
+          "process": "source sprite resized to the art grid (LANCZOS, premultiplied alpha)",
+          "alpha": "transparent background"
+        }
+      }
+    },
+    "warm_overgrown": {
+      "day": 1,
+      "name": "Overgrown Kitchen",
+      "style": "overgrown",
+      "files": {
+        "room.png": {
+          "pixels": [
+            480,
+            352
+          ],
+          "world_size": [
+            960,
+            704
+          ],
+          "source": "painted by tools/build_kitchens.py",
+          "alpha": "opaque"
+        },
+        "bin.png": {
+          "pixels": [
+            25,
+            35
+          ],
+          "world_size": [
+            50,
+            70
+          ],
+          "source": "assets/kitchen/bin.png",
+          "source_crop_ltwh": null,
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "clean_board.png": {
+          "pixels": [
+            38,
+            18
+          ],
+          "world_size": [
+            76,
+            35
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            199,
+            738,
+            440,
+            197
+          ],
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "extractor.png": {
+          "pixels": [
+            110,
+            56
+          ],
+          "world_size": [
+            220,
+            111
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            841,
+            371,
+            550,
+            277
+          ],
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "pass_counter.png": {
+          "pixels": [
+            128,
+            45
+          ],
+          "world_size": [
+            256,
+            90
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            803,
+            108,
+            634,
+            222
+          ],
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "service_hatch.png": {
+          "pixels": [
+            128,
+            56
+          ],
+          "world_size": [
+            256,
+            112
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            816,
+            686,
+            612,
+            267
+          ],
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "sink.png": {
+          "pixels": [
+            105,
+            49
+          ],
+          "world_size": [
+            210,
+            98
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            124,
+            58,
+            578,
+            271
+          ],
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "spice_shelf.png": {
+          "pixels": [
+            95,
+            47
+          ],
+          "world_size": [
+            190,
+            94
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            178,
+            395,
+            501,
+            250
+          ],
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "stove.png": {
+          "pixels": [
+            62,
+            60
+          ],
+          "world_size": [
+            124,
+            119
+          ],
+          "source": "assets/kitchen/stove.png",
+          "source_crop_ltwh": null,
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        },
+        "table.png": {
+          "pixels": [
+            90,
+            55
+          ],
+          "world_size": [
+            180,
+            110
+          ],
+          "source": "assets/kitchen/table.png",
+          "source_crop_ltwh": null,
+          "process": "rot blotches, chipped paint, damp streaks, mould, moss, vines",
+          "alpha": "transparent background"
+        }
+      }
+    },
+    "metal_clean": {
+      "day": 4,
+      "name": "Silver Kitchen",
+      "style": "metal",
+      "files": {
+        "room.png": {
+          "pixels": [
+            480,
+            352
+          ],
+          "world_size": [
+            960,
+            704
+          ],
+          "source": "painted by tools/build_kitchens.py",
+          "alpha": "opaque"
+        },
+        "bin.png": {
+          "pixels": [
+            25,
+            35
+          ],
+          "world_size": [
+            50,
+            70
+          ],
+          "source": "assets/kitchen/bin.png",
+          "source_crop_ltwh": null,
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "clean_board.png": {
+          "pixels": [
+            38,
+            18
+          ],
+          "world_size": [
+            76,
+            35
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            199,
+            738,
+            440,
+            197
+          ],
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "extractor.png": {
+          "pixels": [
+            110,
+            56
+          ],
+          "world_size": [
+            220,
+            111
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            841,
+            371,
+            550,
+            277
+          ],
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "pass_counter.png": {
+          "pixels": [
+            128,
+            45
+          ],
+          "world_size": [
+            256,
+            90
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            803,
+            108,
+            634,
+            222
+          ],
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "service_hatch.png": {
+          "pixels": [
+            128,
+            56
+          ],
+          "world_size": [
+            256,
+            112
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            816,
+            686,
+            612,
+            267
+          ],
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "sink.png": {
+          "pixels": [
+            105,
+            49
+          ],
+          "world_size": [
+            210,
+            98
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            124,
+            58,
+            578,
+            271
+          ],
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "spice_shelf.png": {
+          "pixels": [
+            95,
+            47
+          ],
+          "world_size": [
+            190,
+            94
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            178,
+            395,
+            501,
+            250
+          ],
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "stove.png": {
+          "pixels": [
+            62,
+            60
+          ],
+          "world_size": [
+            124,
+            119
+          ],
+          "source": "assets/kitchen/stove.png",
+          "source_crop_ltwh": null,
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        },
+        "table.png": {
+          "pixels": [
+            90,
+            55
+          ],
+          "world_size": [
+            180,
+            110
+          ],
+          "source": "assets/kitchen/table.png",
+          "source_crop_ltwh": null,
+          "process": "HSV wood/paint masks -> luminance steel ramp -> brushed grain",
+          "alpha": "transparent background"
+        }
+      }
+    },
+    "metal_damaged": {
+      "day": 3,
+      "name": "Damaged Silver Kitchen",
+      "style": "metal_damaged",
+      "files": {
+        "room.png": {
+          "pixels": [
+            480,
+            352
+          ],
+          "world_size": [
+            960,
+            704
+          ],
+          "source": "painted by tools/build_kitchens.py",
+          "alpha": "opaque"
+        },
+        "bin.png": {
+          "pixels": [
+            25,
+            35
+          ],
+          "world_size": [
+            50,
+            70
+          ],
+          "source": "assets/kitchen/bin.png",
+          "source_crop_ltwh": null,
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "clean_board.png": {
+          "pixels": [
+            38,
+            18
+          ],
+          "world_size": [
+            76,
+            35
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            199,
+            738,
+            440,
+            197
+          ],
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "extractor.png": {
+          "pixels": [
+            110,
+            56
+          ],
+          "world_size": [
+            220,
+            111
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            841,
+            371,
+            550,
+            277
+          ],
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "pass_counter.png": {
+          "pixels": [
+            128,
+            45
+          ],
+          "world_size": [
+            256,
+            90
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            803,
+            108,
+            634,
+            222
+          ],
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "service_hatch.png": {
+          "pixels": [
+            128,
+            56
+          ],
+          "world_size": [
+            256,
+            112
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            816,
+            686,
+            612,
+            267
+          ],
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "sink.png": {
+          "pixels": [
+            105,
+            49
+          ],
+          "world_size": [
+            210,
+            98
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            124,
+            58,
+            578,
+            271
+          ],
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "spice_shelf.png": {
+          "pixels": [
+            95,
+            47
+          ],
+          "world_size": [
+            190,
+            94
+          ],
+          "source": "assets/kitchen/restaurant_details.png",
+          "source_crop_ltwh": [
+            178,
+            395,
+            501,
+            250
+          ],
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "stove.png": {
+          "pixels": [
+            62,
+            60
+          ],
+          "world_size": [
+            124,
+            119
+          ],
+          "source": "assets/kitchen/stove.png",
+          "source_crop_ltwh": null,
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        },
+        "table.png": {
+          "pixels": [
+            90,
+            55
+          ],
+          "world_size": [
+            180,
+            110
+          ],
+          "source": "assets/kitchen/table.png",
+          "source_crop_ltwh": null,
+          "process": "metal_clean + grime, edge/seam rust, drips, dents, scratches, broken door",
+          "alpha": "transparent background"
+        }
+      }
+    }
+  },
+  "shared_runtime_art": "Crates, plate, pot and food are loaded from assets/ingredients/sprites in every kitchen."
+}
